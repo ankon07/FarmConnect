@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Leaflet Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin=""/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        .custom-marker {
+            background-color: #2E7D32;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+        }
+        .available-marker {
+            background-color: #4CAF50;
+        }
+        .unavailable-marker {
+            background-color: #F44336;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+    
+    <script>
+        // Initialize the map
+        var map = L.map('map').setView([23.8103, 90.4125], 10); // Default to Dhaka, Bangladesh
+        
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 18,
+        }).addTo(map);
+        
+        // Sample machinery data
+        var machineryData = [
+            {
+                id: 1,
+                name: "Tractor - John Deere 5050D",
+                lat: 23.8103,
+                lng: 90.4125,
+                available: true,
+                distance: "2.5 km",
+                price: "৳1,500/day"
+            },
+            {
+                id: 2,
+                name: "Harvester - Mahindra 575 DI",
+                lat: 23.8203,
+                lng: 90.4225,
+                available: true,
+                distance: "3.2 km",
+                price: "৳2,000/day"
+            },
+            {
+                id: 3,
+                name: "Plough - Disc Plough",
+                lat: 23.8003,
+                lng: 90.4025,
+                available: false,
+                distance: "1.8 km",
+                price: "৳800/day"
+            },
+            {
+                id: 4,
+                name: "Seeder - Seed Drill",
+                lat: 23.8303,
+                lng: 90.4325,
+                available: true,
+                distance: "4.1 km",
+                price: "৳1,200/day"
+            },
+            {
+                id: 5,
+                name: "Sprayer - Power Sprayer",
+                lat: 23.7903,
+                lng: 90.3925,
+                available: true,
+                distance: "3.7 km",
+                price: "৳600/day"
+            }
+        ];
+        
+        // Custom icons
+        var availableIcon = L.divIcon({
+            className: 'custom-marker available-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        var unavailableIcon = L.divIcon({
+            className: 'custom-marker unavailable-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+        
+        // Add markers to the map
+        machineryData.forEach(function(machinery) {
+            var icon = machinery.available ? availableIcon : unavailableIcon;
+            var marker = L.marker([machinery.lat, machinery.lng], {icon: icon}).addTo(map);
+            
+            var popupContent = `
+                <div style="min-width: 200px;">
+                    <h3 style="margin: 0 0 10px 0; color: #2E7D32;">${machinery.name}</h3>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> ${machinery.available ? 'Available' : 'Not Available'}</p>
+                    <p style="margin: 5px 0;"><strong>Distance:</strong> ${machinery.distance}</p>
+                    <p style="margin: 5px 0;"><strong>Price:</strong> ${machinery.price}</p>
+                    ${machinery.available ? '<button onclick="reserveMachinery(' + machinery.id + ')" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">Reserve</button>' : '<button disabled style="background: #ccc; color: #666; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px;">Not Available</button>'}
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+        });
+        
+        // Function to handle machinery reservation
+        function reserveMachinery(id) {
+            // Send message to React Native
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'RESERVE_MACHINERY',
+                    machineryId: id
+                }));
+            }
+        }
+        
+        // Listen for messages from React Native
+        window.addEventListener('message', function(event) {
+            try {
+                var data = JSON.parse(event.data);
+                
+                if (data.type === 'UPDATE_LOCATION' && data.location) {
+                    map.setView([data.location.latitude, data.location.longitude], 12);
+                }
+                
+                if (data.type === 'UPDATE_MACHINERY_DATA' && data.machinery) {
+                    // Clear existing markers
+                    map.eachLayer(function(layer) {
+                        if (layer instanceof L.Marker) {
+                            map.removeLayer(layer);
+                        }
+                    });
+                    
+                    // Add new markers
+                    data.machinery.forEach(function(machinery) {
+                        var icon = machinery.available ? availableIcon : unavailableIcon;
+                        var marker = L.marker([machinery.lat, machinery.lng], {icon: icon}).addTo(map);
+                        
+                        var popupContent = `
+                            <div style="min-width: 200px;">
+                                <h3 style="margin: 0 0 10px 0; color: #2E7D32;">${machinery.name}</h3>
+                                <p style="margin: 5px 0;"><strong>Status:</strong> ${machinery.available ? 'Available' : 'Not Available'}</p>
+                                <p style="margin: 5px 0;"><strong>Distance:</strong> ${machinery.distance}</p>
+                                <p style="margin: 5px 0;"><strong>Price:</strong> ${machinery.price}</p>
+                                ${machinery.available ? '<button onclick="reserveMachinery(' + machinery.id + ')" style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; margin-top: 10px;">Reserve</button>' : '<button disabled style="background: #ccc; color: #666; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 10px;">Not Available</button>'}
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                    });
+                }
+            } catch (e) {
+                console.error('Error parsing message:', e);
+            }
+        });
+        
+        // Fit map to show all markers
+        if (machineryData.length > 0) {
+            var group = new L.featureGroup(map._layers);
+            if (Object.keys(group._layers).length > 0) {
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+    </script>
+</body>
+</html>
