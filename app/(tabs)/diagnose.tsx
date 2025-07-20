@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, Platform, ScrollView }
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { analyzeDiseaseImageWithGemini } from "@/services/geminiApi";
+import { translateText } from "@/services/translationApi";
 import AppHeader from "@/components/common/AppHeader";
 import TabView from "@/components/common/TabView";
 import PrimaryButton from "@/components/common/PrimaryButton";
@@ -16,11 +17,21 @@ interface DiagnosisResult {
   severity: string;
 }
 
+interface TranslatedResult {
+  diseaseName: string;
+  description: string;
+  treatment: string;
+  severity: string;
+}
+
 export default function DiagnoseScreen() {
   const [activeTab, setActiveTab] = useState("Crop");
   const [image, setImage] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
+  const [translatedResult, setTranslatedResult] = useState<TranslatedResult | null>(null);
+  const [showTranslated, setShowTranslated] = useState<boolean>(false);
+  const [translating, setTranslating] = useState(false);
   const router = useRouter();
 
   const tabs = ["Crop", "Livestock", "Fish"];
@@ -73,6 +84,29 @@ export default function DiagnoseScreen() {
     try {
       const response = await analyzeDiseaseImageWithGemini(image, activeTab.toLowerCase());
       setResult(response); // The Gemini API function directly returns the parsed JSON
+      
+      // Automatically translate the result to Bangla
+      setTranslating(true);
+      try {
+        const translatedDiseaseName = await translateText(response.diseaseName || 'Disease Analysis', 'bn');
+        const translatedDescription = await translateText(response.description || 'Disease analysis completed. Please consult with an expert for detailed diagnosis.', 'bn');
+        const translatedTreatment = await translateText(response.treatment || 'Please consult with a specialist for proper treatment recommendations.', 'bn');
+        const translatedSeverity = await translateText(response.severity || 'Medium', 'bn');
+        
+        setTranslatedResult({
+          diseaseName: translatedDiseaseName,
+          description: translatedDescription,
+          treatment: translatedTreatment,
+          severity: translatedSeverity,
+        });
+        setShowTranslated(true); // Show translated version by default
+      } catch (translationError) {
+        console.error("Translation error:", translationError);
+        // If translation fails, just show the original result
+        setShowTranslated(false);
+      } finally {
+        setTranslating(false);
+      }
     } catch (error) {
       console.error("Error analyzing image:", error);
       alert("Failed to analyze image. Please try again.");
@@ -84,6 +118,9 @@ export default function DiagnoseScreen() {
   const resetDiagnosis = () => {
     setImage(null);
     setResult(null);
+    setTranslatedResult(null);
+    setShowTranslated(false);
+    setTranslating(false);
   };
 
   return (
@@ -140,7 +177,9 @@ export default function DiagnoseScreen() {
                 contentContainerStyle={styles.scrollContent}
               >
                 <View style={styles.resultHeader}>
-                  <Text style={styles.resultTitle}>{result.diseaseName || 'Disease Analysis'}</Text>
+                  <Text style={styles.resultTitle}>
+                    {showTranslated && translatedResult ? translatedResult.diseaseName : (result.diseaseName || 'Disease Analysis')}
+                  </Text>
                   <View style={[
                     styles.severityBadge, 
                     { 
@@ -150,24 +189,47 @@ export default function DiagnoseScreen() {
                     }
                   ]}>
                     <Text style={styles.severityBadgeText}>
-                      {result.severity || 'Medium'} Severity
+                      {showTranslated && translatedResult ? translatedResult.severity : (result.severity || 'Medium')} Severity
                     </Text>
                   </View>
+                  
+                  {translatedResult && (
+                    <TouchableOpacity 
+                      style={styles.toggleButton} 
+                      onPress={() => setShowTranslated(!showTranslated)}
+                    >
+                      <Text style={styles.toggleButtonText}>
+                        {showTranslated ? "Show Original" : "Show Translated (Bangla)"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
 
                 <View style={styles.infoCard}>
                   <Text style={styles.cardTitle}>📋 Description</Text>
                   <Text style={styles.cardContent}>
-                    {result.description || 'Disease analysis completed. Please consult with an expert for detailed diagnosis.'}
+                    {showTranslated && translatedResult ? 
+                      translatedResult.description : 
+                      (result.description || 'Disease analysis completed. Please consult with an expert for detailed diagnosis.')
+                    }
                   </Text>
                 </View>
 
                 <View style={styles.infoCard}>
                   <Text style={styles.cardTitle}>💊 Recommended Treatment</Text>
                   <Text style={styles.cardContent}>
-                    {result.treatment || 'Please consult with a specialist for proper treatment recommendations.'}
+                    {showTranslated && translatedResult ? 
+                      translatedResult.treatment : 
+                      (result.treatment || 'Please consult with a specialist for proper treatment recommendations.')
+                    }
                   </Text>
                 </View>
+
+                {translating && (
+                  <View style={styles.translatingContainer}>
+                    <Text style={styles.translatingText}>🔄 Translating to Bangla...</Text>
+                  </View>
+                )}
 
                 <View style={styles.actionButtonContainer}>
                   <PrimaryButton 
@@ -359,5 +421,30 @@ const styles = StyleSheet.create({
   },
   actionButtonContainer: {
     marginTop: 10,
+  },
+  toggleButton: {
+    marginTop: 12,
+    backgroundColor: COLORS.accent,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  toggleButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
+  },
+  translatingContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  translatingText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontStyle: 'italic',
   },
 });

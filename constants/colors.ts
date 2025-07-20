@@ -26,6 +26,7 @@ export const COLORS = {
     inputBackground: "#F5F5F5",
     lightGray: "#BDBDBD",
     white: "#FFFFFF",
+    accent: "#FF9800", // Added for toggle button
   };
   
   export default COLORS;

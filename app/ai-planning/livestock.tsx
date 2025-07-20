@@ -6,6 +6,7 @@ import PrimaryButton from "@/components/common/PrimaryButton";
 import FilterDropdown from "@/components/common/FilterDropdown";
 import { COLORS } from "@/constants/colors";
 import { generateFarmingPlan } from "@/services/geminiApi";
+import { translateText, translateStructuredContent } from "@/services/translationApi"; // Import the translation service
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
@@ -49,7 +50,10 @@ export default function LivestockPlanning() {
   });
   const [loading, setLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState<string>("");
+  const [translatedResponse, setTranslatedResponse] = useState<string>(""); // State for translated response
+  const [showTranslated, setShowTranslated] = useState<boolean>(false); // State to toggle translation view
   const [parsedResponse, setParsedResponse] = useState<any>(null);
+  const [parsedTranslatedResponse, setParsedTranslatedResponse] = useState<any>(null); // State for parsed translated response
 
   const handleInputChange = (field: keyof LivestockFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -169,6 +173,13 @@ export default function LivestockPlanning() {
       // Parse the markdown response into sections
       const parsed = parseMarkdownResponse(response);
       setParsedResponse(parsed);
+
+      // Translate the response to Bangla using structured content translation
+      const translated = await translateStructuredContent(response, "bn");
+      setTranslatedResponse(translated);
+      const parsedTranslated = parseMarkdownResponse(translated);
+      setParsedTranslatedResponse(parsedTranslated);
+      setShowTranslated(true); // Show translated response by default
     } catch (error) {
       console.error("Error generating plan:", error);
       Alert.alert("Error", "Failed to generate livestock plan. Please try again.");
@@ -337,7 +348,7 @@ export default function LivestockPlanning() {
           <div class="section">
             <h2>🤖 AI Recommendations</h2>
             <div class="recommendations">
-              <pre>${aiResponse}</pre>
+              <pre>${showTranslated ? translatedResponse : aiResponse}</pre>
             </div>
           </div>
 
@@ -607,12 +618,20 @@ export default function LivestockPlanning() {
             <View style={styles.responseHeader}>
               <Text style={styles.responseTitle}>🤖 AI Recommendations</Text>
               <Text style={styles.responseSubtitle}>Personalized livestock farming plan based on your inputs</Text>
+              {translatedResponse && (
+                <PrimaryButton
+                  title={showTranslated ? "Show Original" : "Show Translated (Bangla)"}
+                  onPress={() => setShowTranslated(!showTranslated)}
+                  style={styles.toggleButton}
+                  textStyle={styles.toggleButtonText}
+                />
+              )}
             </View>
             
             <ScrollView style={styles.responseScrollView} nestedScrollEnabled={true}>
-              {parsedResponse && parsedResponse.length > 0 ? (
+              {(showTranslated ? parsedTranslatedResponse : parsedResponse) && (showTranslated ? parsedTranslatedResponse : parsedResponse).length > 0 ? (
                 <View style={styles.parsedContent}>
-                  {parsedResponse.map((section: any, sectionIndex: number) => {
+                  {(showTranslated ? parsedTranslatedResponse : parsedResponse).map((section: any, sectionIndex: number) => {
                     const formattedContent = formatSectionContent(section.content);
                     
                     return (
@@ -662,7 +681,7 @@ export default function LivestockPlanning() {
                   })}
                 </View>
               ) : (
-                <Text style={styles.responseText}>{aiResponse}</Text>
+                <Text style={styles.responseText}>{showTranslated ? translatedResponse : aiResponse}</Text>
               )}
             </ScrollView>
             
@@ -790,6 +809,19 @@ const styles = StyleSheet.create({
   secondaryButton: {
     flex: 1,
     backgroundColor: COLORS.secondary,
+  },
+  toggleButton: {
+    marginTop: 10,
+    backgroundColor: COLORS.accent,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  toggleButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.white,
   },
   dropdownContainer: {
     gap: 8,
