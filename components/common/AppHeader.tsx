@@ -2,18 +2,28 @@ import React from "react";
 import { StyleSheet, View, Text, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { COLORS } from "@/constants/colors";
-import { ArrowLeft, HelpCircle } from "lucide-react-native";
+import { ArrowLeft, HelpCircle, Bell } from "lucide-react-native";
 
 type AppHeaderProps = {
   title: string;
   showBackButton?: boolean;
   showHelpButton?: boolean;
+  showNotificationButton?: boolean;
+  showLocation?: boolean; // New prop for showing location
+  location?: string; // New prop for location text
+  onNotificationPress?: () => void;
+  notificationCount?: number;
 };
 
 const AppHeader: React.FC<AppHeaderProps> = ({
   title,
   showBackButton = false,
   showHelpButton = false,
+  showNotificationButton = false,
+  showLocation = false, // Default to false
+  location, // Destructure location prop
+  onNotificationPress,
+  notificationCount = 0,
 }) => {
   const router = useRouter();
 
@@ -28,14 +38,37 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             <ArrowLeft size={24} color={COLORS.white} />
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>{title}</Text>
+        <View>
+          <Text style={styles.title}>{title}</Text>
+          {showLocation && location && (
+            <Text style={styles.locationText}>{location}</Text>
+          )}
+        </View>
       </View>
       
-      {showHelpButton && (
-        <TouchableOpacity style={styles.helpButton}>
-          <HelpCircle size={24} color={COLORS.white} />
-        </TouchableOpacity>
-      )}
+      <View style={styles.rightContainer}>
+        {showNotificationButton && (
+          <TouchableOpacity 
+            style={styles.notificationButton} 
+            onPress={onNotificationPress}
+          >
+            <Bell size={24} color={COLORS.white} />
+            {notificationCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
+        
+        {showHelpButton && (
+          <TouchableOpacity style={styles.helpButton}>
+            <HelpCircle size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 };
@@ -55,6 +88,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  rightContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   backButton: {
     marginRight: 16,
   },
@@ -65,6 +102,32 @@ const styles = StyleSheet.create({
   },
   helpButton: {
     padding: 4,
+    marginLeft: 8,
+  },
+  notificationButton: {
+    padding: 4,
+    position: "relative",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    backgroundColor: COLORS.error,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  notificationBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  locationText: {
+    fontSize: 14,
+    color: COLORS.white,
+    marginTop: 4,
   },
 });
 

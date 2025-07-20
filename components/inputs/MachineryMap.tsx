@@ -100,11 +100,6 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
   };
 
   // HTML content for the WebView
-  const htmlSource = {
-    uri: 'file:///android_asset/map.html'
-  };
-
-  // For development, we'll use the HTML content directly
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -137,6 +132,31 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
             .unavailable-marker {
                 background-color: #F44336;
             }
+            .user-location-marker {
+                background-color: #2196F3;
+                border: 3px solid #fff;
+                border-radius: 50%;
+                width: 16px;
+                height: 16px;
+                box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+            }
+            .user-location-pulse {
+                background-color: rgba(33, 150, 243, 0.3);
+                border-radius: 50%;
+                width: 30px;
+                height: 30px;
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0% {
+                    transform: scale(0.8);
+                    opacity: 1;
+                }
+                100% {
+                    transform: scale(2);
+                    opacity: 0;
+                }
+            }
         </style>
     </head>
     <body>
@@ -168,8 +188,15 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
                 iconSize: [20, 20],
                 iconAnchor: [10, 10]
             });
+
+            var userLocationIcon = L.divIcon({
+                className: 'user-location-marker',
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
             
             var markers = [];
+            var userLocationMarker = null;
             
             // Function to clear all markers
             function clearMarkers() {
@@ -177,6 +204,24 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
                     map.removeLayer(marker);
                 });
                 markers = [];
+            }
+
+            // Function to update user location marker
+            function updateUserLocation(location) {
+                // Remove existing user location marker
+                if (userLocationMarker) {
+                    map.removeLayer(userLocationMarker);
+                }
+                
+                // Add new user location marker
+                userLocationMarker = L.marker([location.latitude, location.longitude], {
+                    icon: userLocationIcon
+                }).addTo(map);
+                
+                userLocationMarker.bindPopup('<div style="text-align: center;"><strong>Your Location</strong></div>');
+                
+                // Center map on user location
+                map.setView([location.latitude, location.longitude], 14);
             }
             
             // Function to add markers
@@ -209,8 +254,8 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
                     markers.push(marker);
                 });
                 
-                // Fit map to show all markers
-                if (markers.length > 0) {
+                // Fit map to show all markers if no user location
+                if (markers.length > 0 && !userLocationMarker) {
                     var group = new L.featureGroup(markers);
                     map.fitBounds(group.getBounds().pad(0.1));
                 }
@@ -232,7 +277,7 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
                     var data = JSON.parse(event.data);
                     
                     if (data.type === 'UPDATE_LOCATION' && data.location) {
-                        map.setView([data.location.latitude, data.location.longitude], 12);
+                        updateUserLocation(data.location);
                     }
                     
                     if (data.type === 'UPDATE_MACHINERY_DATA' && data.machinery) {
@@ -240,7 +285,7 @@ export default function MachineryMap({ equipment, onReserve, onMarkerPress, user
                     }
 
                     if (data.type === 'CENTER_ON_USER_LOCATION' && data.location) {
-                        map.setView([data.location.latitude, data.location.longitude], 14); // Zoom in a bit more for user location
+                        updateUserLocation(data.location);
                     }
                 } catch (e) {
                     console.error('Error parsing message:', e);

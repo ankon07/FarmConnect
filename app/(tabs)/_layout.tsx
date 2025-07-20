@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Home, Leaf, ShoppingCart, Users, BarChart2 } from "lucide-react-native";
+import { Home, Leaf, ShoppingCart, Users, BarChart2, Building2 } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
 
 export default function TabLayout() {
@@ -54,6 +54,20 @@ export default function TabLayout() {
         options={{
           title: "Contacts",
           tabBarIcon: ({ color }) => <Users size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="govt-services"
+        options={{
+          title: "Govt Services",
+          tabBarIcon: ({ color }) => <Building2 size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="badc"
+        options={{
+          title: "BADC",
+          tabBarIcon: ({ color }) => <Leaf size={24} color={color} />,
         }}
       />
     </Tabs>

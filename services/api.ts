@@ -182,16 +182,23 @@ export const findNearbyVets = async (params: any) => {
     { id: "a2", name: "Nasreen Jahan", title: "Crop Specialist", location: "Dhaka", imageUrl: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80", phone: "01512345678" },
     { id: "a3", name: "Abdul Karim", title: "Fisheries Officer", location: "Gazipur", imageUrl: "https://images.unsplash.com/photo-1566753323558-f4e0952af115?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80", phone: "01312345678" },
   ];
+
+  const equipmentSuppliers = [
+    { id: "e1", name: "Farm Machinery Ltd.", title: "Tractor & Harvester Supplier", location: "Dhaka", imageUrl: "https://images.unsplash.com/photo-1589923188651-268a9765e432?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80", phone: "01412345678" },
+    { id: "e2", name: "Irrigation Solutions Co.", title: "Water Pump & Irrigation Systems", location: "Comilla", imageUrl: "https://images.unsplash.com/photo-1617781377265-7248991e257f?ixlib=rb-1.2.1&auto=format&fit=crop&w=400&q=80", phone: "01998765432" },
+  ];
   
   // Filter based on type
   if (params.filter === "veterinarians") {
     return { success: true, data: vets };
   } else if (params.filter === "agriculture officers") {
     return { success: true, data: agricultureOfficers };
+  } else if (params.filter === "equipment suppliers") {
+    return { success: true, data: equipmentSuppliers };
   }
   
   // Return all contacts by default
-  return { success: true, data: [...vets, ...agricultureOfficers] };
+  return { success: true, data: [...vets, ...agricultureOfficers, ...equipmentSuppliers] };
 };
 
 // Fertilizer Stock
@@ -376,88 +383,158 @@ export const requestRepair = async (serviceId: string) => {
   };
 };
 
-// Weather Forecast
-export const fetchWeatherForecast = async (params: any) => {
+// Contracts
+export const fetchContracts = async () => {
   await wait(800);
-  
+
   return {
     success: true,
-    data: {
-      current: {
-        date: new Date().toISOString(),
-        temperature: 28,
-        feelsLike: 30,
-        condition: "Partly Cloudy",
-        humidity: 65,
-        windSpeed: 12,
-        uvIndex: 6,
-        iconUrl: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png",
+    data: [
+      {
+        id: "c1",
+        title: "Rice Cultivation Agreement",
+        type: "Crop",
+        status: "Active",
+        startDate: "2023-03-01",
+        endDate: "2023-08-31",
+        party: "ABC Millers",
+        value: "500,000 BDT",
+        details: "Agreement for the supply of 10 tons of rice.",
       },
-      forecast: [
-        {
-          date: new Date().toISOString(),
-          maxTemp: 29,
-          minTemp: 24,
-          condition: "Partly Cloudy",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png",
-        },
-        {
-          date: new Date(Date.now() + 86400000).toISOString(), // +1 day
-          maxTemp: 30,
-          minTemp: 25,
-          condition: "Sunny",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/979/979585.png",
-        },
-        {
-          date: new Date(Date.now() + 172800000).toISOString(), // +2 days
-          maxTemp: 27,
-          minTemp: 23,
-          condition: "Rain",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png",
-        },
-        {
-          date: new Date(Date.now() + 259200000).toISOString(), // +3 days
-          maxTemp: 26,
-          minTemp: 22,
-          condition: "Thunderstorm",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/1959/1959338.png",
-        },
-        {
-          date: new Date(Date.now() + 345600000).toISOString(), // +4 days
-          maxTemp: 28,
-          minTemp: 23,
-          condition: "Cloudy",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/414/414927.png",
-        },
-        {
-          date: new Date(Date.now() + 432000000).toISOString(), // +5 days
-          maxTemp: 29,
-          minTemp: 24,
-          condition: "Partly Cloudy",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png",
-        },
-        {
-          date: new Date(Date.now() + 518400000).toISOString(), // +6 days
-          maxTemp: 30,
-          minTemp: 25,
-          condition: "Sunny",
-          iconUrl: "https://cdn-icons-png.flaticon.com/512/979/979585.png",
-        },
-      ],
-      farmingTips: [
-        {
-          title: "Irrigation Recommendation",
-          description: "Based on the forecast, moderate irrigation is recommended for the next 3 days. Reduce watering on Thursday due to expected rainfall.",
-        },
-        {
-          title: "Pest Alert",
-          description: "The upcoming warm and humid conditions are favorable for aphid infestations. Monitor your crops closely and consider preventive measures.",
-        },
-        {
-          title: "Harvesting Advice",
-          description: "Plan your rice harvesting before Wednesday to avoid the forecasted thunderstorms which could damage mature crops.",
-        },
-      ],
-    },
+      {
+        id: "c2",
+        title: "Poultry Supply Contract",
+        type: "Livestock",
+        status: "Pending",
+        startDate: "2023-06-01",
+        endDate: "2024-05-31",
+        party: "XYZ Poultry Farm",
+        value: "1,200,000 BDT",
+        details: "Contract for regular supply of broiler chickens.",
+      },
+      {
+        id: "c3",
+        title: "Land Lease Agreement",
+        type: "Land",
+        status: "Active",
+        startDate: "2022-01-01",
+        endDate: "2026-12-31",
+        party: "Government Agriculture Dept.",
+        value: "10,000 BDT/year",
+        details: "Lease agreement for 5 acres of agricultural land.",
+      },
+      {
+        id: "c4",
+        title: "Fish Farming Partnership",
+        type: "Fisheries",
+        status: "Completed",
+        startDate: "2022-09-01",
+        endDate: "2023-02-28",
+        party: "Local Fishermen Co-op",
+        value: "300,000 BDT",
+        details: "Partnership for Tilapia fish farming.",
+      },
+    ],
   };
+};
+
+// Weather Forecast
+export const fetchWeatherForecast = async (params: { latitude: number; longitude: number }) => {
+  try {
+    const { latitude, longitude } = params;
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto&forecast_days=7`
+    );
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.reason);
+    }
+
+    const weatherCodeMap: { [key: number]: { condition: string; iconUrl: string } } = {
+      0: { condition: "Clear sky", iconUrl: "https://cdn-icons-png.flaticon.com/512/979/979585.png" },
+      1: { condition: "Mainly clear", iconUrl: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png" },
+      2: { condition: "Partly cloudy", iconUrl: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png" },
+      3: { condition: "Overcast", iconUrl: "https://cdn-icons-png.flaticon.com/512/414/414927.png" },
+      45: { condition: "Fog", iconUrl: "https://cdn-icons-png.flaticon.com/512/1759/1759220.png" },
+      48: { condition: "Depositing rime fog", iconUrl: "https://cdn-icons-png.flaticon.com/512/1759/1759220.png" },
+      51: { condition: "Drizzle light", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      53: { condition: "Drizzle moderate", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      55: { condition: "Drizzle dense", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      56: { condition: "Freezing Drizzle light", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      57: { condition: "Freezing Drizzle dense", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      61: { condition: "Rain slight", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      63: { condition: "Rain moderate", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      65: { condition: "Rain heavy", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      66: { condition: "Freezing Rain light", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      67: { condition: "Freezing Rain heavy", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      71: { condition: "Snow fall slight", iconUrl: "https://cdn-icons-png.flaticon.com/512/1779/1779883.png" },
+      73: { condition: "Snow fall moderate", iconUrl: "https://cdn-icons-png.flaticon.com/512/1779/1779883.png" },
+      75: { condition: "Snow fall heavy", iconUrl: "https://cdn-icons-png.flaticon.com/512/1779/1779883.png" },
+      77: { condition: "Snow grains", iconUrl: "https://cdn-icons-png.flaticon.com/512/1779/1779883.png" },
+      80: { condition: "Rain showers slight", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      81: { condition: "Rain showers moderate", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      82: { condition: "Rain showers violent", iconUrl: "https://cdn-icons-png.flaticon.com/512/3351/3351979.png" },
+      85: { condition: "Snow showers slight", iconUrl: "https://cdn-icons-png.flaticon.com/512/1779/1779883.png" },
+      86: { condition: "Snow showers heavy", iconUrl: "https://cdn-icons-png.flaticon.com/512/1779/1779883.png" },
+      95: { condition: "Thunderstorm", iconUrl: "https://cdn-icons-png.flaticon.com/512/1959/1959338.png" },
+      96: { condition: "Thunderstorm with slight hail", iconUrl: "https://cdn-icons-png.flaticon.com/512/1959/1959338.png" },
+      99: { condition: "Thunderstorm with heavy hail", iconUrl: "https://cdn-icons-png.flaticon.com/512/1959/1959338.png" },
+    };
+
+    const getCurrentWeatherCondition = (code: number) => {
+      return weatherCodeMap[code] || { condition: "Unknown", iconUrl: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png" };
+    };
+
+    const currentCondition = getCurrentWeatherCondition(data.current.weather_code);
+
+    const forecastData = data.daily.time.map((time: string, index: number) => {
+      const dailyCode = data.daily.weather_code[index];
+      const dailyCondition = getCurrentWeatherCondition(dailyCode);
+      return {
+        date: time,
+        maxTemp: data.daily.temperature_2m_max[index],
+        minTemp: data.daily.temperature_2m_min[index],
+        condition: dailyCondition.condition,
+        iconUrl: dailyCondition.iconUrl,
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        current: {
+          date: data.current.time,
+          temperature: data.current.temperature_2m,
+          feelsLike: data.current.temperature_2m, // Open-Meteo doesn't provide feelsLike directly, using temperature_2m
+          condition: currentCondition.condition,
+          humidity: data.current.relative_humidity_2m,
+          windSpeed: data.current.wind_speed_10m,
+          uvIndex: 0, // Open-Meteo doesn't provide UV index directly
+          iconUrl: currentCondition.iconUrl,
+        },
+        forecast: forecastData,
+        farmingTips: [
+          {
+            title: "Irrigation Recommendation",
+            description: "Based on the forecast, moderate irrigation is recommended for the next 3 days. Reduce watering on Thursday due to expected rainfall.",
+          },
+          {
+            title: "Pest Alert",
+            description: "The upcoming warm and humid conditions are favorable for aphid infestations. Monitor your crops closely and consider preventive measures.",
+          },
+          {
+            title: "Harvesting Advice",
+            description: "Plan your rice harvesting before Wednesday to avoid the forecasted thunderstorms which could damage mature crops.",
+          },
+        ],
+      },
+    };
+  } catch (error: any) {
+    console.error("Error fetching weather forecast:", error);
+    return {
+      success: false,
+      message: error.message || "Failed to fetch weather data.",
+    };
+  }
 };

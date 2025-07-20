@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image, Platform } from "react-native";
+import { StyleSheet, Text, View, TouchableOpacity, Image, Platform, ScrollView } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { analyzeDiseaseImageWithGemini } from "@/services/geminiApi";
@@ -134,21 +134,49 @@ export default function DiagnoseScreen() {
             <Image source={{ uri: image }} style={styles.previewImage} />
             
             {result ? (
-              <View style={styles.resultContainer}>
-                <Text style={styles.resultTitle}>{result.diseaseName}</Text>
-                <Text style={styles.resultDescription}>{result.description}</Text>
-                
-                <View style={styles.treatmentContainer}>
-                  <Text style={styles.treatmentTitle}>Recommended Treatment:</Text>
-                  <Text style={styles.treatmentText}>{result.treatment}</Text>
+              <ScrollView 
+                style={styles.resultContainer}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+              >
+                <View style={styles.resultHeader}>
+                  <Text style={styles.resultTitle}>{result.diseaseName || 'Disease Analysis'}</Text>
+                  <View style={[
+                    styles.severityBadge, 
+                    { 
+                      backgroundColor: result.severity === "High" ? COLORS.danger : 
+                                     result.severity === "Medium" ? COLORS.warning : 
+                                     COLORS.success 
+                    }
+                  ]}>
+                    <Text style={styles.severityBadgeText}>
+                      {result.severity || 'Medium'} Severity
+                    </Text>
+                  </View>
                 </View>
-                
-                <PrimaryButton 
-                  title="Start New Diagnosis" 
-                  onPress={resetDiagnosis} 
-                  variant="secondary"
-                />
-              </View>
+
+                <View style={styles.infoCard}>
+                  <Text style={styles.cardTitle}>📋 Description</Text>
+                  <Text style={styles.cardContent}>
+                    {result.description || 'Disease analysis completed. Please consult with an expert for detailed diagnosis.'}
+                  </Text>
+                </View>
+
+                <View style={styles.infoCard}>
+                  <Text style={styles.cardTitle}>💊 Recommended Treatment</Text>
+                  <Text style={styles.cardContent}>
+                    {result.treatment || 'Please consult with a specialist for proper treatment recommendations.'}
+                  </Text>
+                </View>
+
+                <View style={styles.actionButtonContainer}>
+                  <PrimaryButton 
+                    title="Start New Diagnosis" 
+                    onPress={resetDiagnosis} 
+                    variant="secondary"
+                  />
+                </View>
+              </ScrollView>
             ) : (
               <View style={styles.actionContainer}>
                 <PrimaryButton 
@@ -273,5 +301,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
     lineHeight: 24,
+  },
+  severityContainer: {
+    backgroundColor: COLORS.background,
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  severityTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+  },
+  severityText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  resultHeader: {
+    marginBottom: 20,
+  },
+  severityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  severityBadgeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  infoCard: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  cardContent: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  actionButtonContainer: {
+    marginTop: 10,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
 import { getEquipmentList } from "@/services/api";
 import AppHeader from "@/components/common/AppHeader";
 import EquipmentListItem from "@/components/inputs/EquipmentListItem";
@@ -7,8 +7,7 @@ import MachineryMap from "@/components/inputs/MachineryMap";
 import MachineryQuickInfoBanner from "@/components/inputs/MachineryQuickInfoBanner";
 import { COLORS } from "@/constants/colors";
 import { useLocation } from "@/context/LocationContext";
-import { MapPin, List, LocateFixed } from "lucide-react-native";
-import * as Location from 'expo-location';
+import { MapPin, List, LocateFixed, AlertCircle } from "lucide-react-native";
 
 interface Equipment {
   id: string;
@@ -22,30 +21,32 @@ interface Equipment {
 }
 
 export default function MachineryScreen() {
-  const { location } = useLocation();
+  const { 
+    location, 
+    userLocation, 
+    hasLocationPermission, 
+    requestLocationPermission, 
+    getCurrentLocation,
+    isLoading: locationLoading,
+    error: locationError 
+  } = useLocation();
+  
   const [viewMode, setViewMode] = useState("list"); // "list" or "map"
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMachinery, setSelectedMachinery] = useState<Equipment | null>(null);
-  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   useEffect(() => {
-    (async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Permission to access location was denied');
-        return;
-      }
-
-      let currentLocation = await Location.getCurrentPositionAsync({});
-      setUserLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-      });
-    })();
     loadEquipment();
   }, [location]);
+
+  useEffect(() => {
+    // Show location error if any
+    if (locationError) {
+      setError(locationError);
+    }
+  }, [locationError]);
 
   const loadEquipment = async () => {
     if (!location) return;
@@ -78,15 +79,34 @@ export default function MachineryScreen() {
     }
   };
 
-  const handleLocateUser = () => {
+  const handleLocateUser = async () => {
+    if (!hasLocationPermission) {
+      const granted = await requestLocationPermission();
+      if (!granted) {
+        Alert.alert(
+          'Location Permission Required',
+          'Please enable location access to use this feature.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+    }
+
     if (userLocation) {
       // This will trigger the useEffect in MachineryMap to update the map view
-      // For now, we'll just log it. The actual map centering will happen via prop update.
       console.log("Centering map on user location:", userLocation);
-      // In a real app, you might want to explicitly send a message to the WebView
-      // if the map doesn't automatically re-center on userLocation change.
+      // Force refresh current location
+      await getCurrentLocation();
     } else {
-      setError("User location not available.");
+      // Try to get current location
+      const currentLoc = await getCurrentLocation();
+      if (!currentLoc) {
+        Alert.alert(
+          'Location Unavailable',
+          'Unable to get your current location. Please check your location settings.',
+          [{ text: 'OK' }]
+        );
+      }
     }
   };
 
@@ -113,21 +133,29 @@ export default function MachineryScreen() {
     />
   );
 
-  const renderMapView = () => (
-    <View style={styles.mapContainer}>
-    <MachineryMap 
-      equipment={equipment}
-      onReserve={handleReserve}
-      onMarkerPress={handleMarkerPress}
-      userLocation={userLocation}
-    />
-      {userLocation && (
-        <TouchableOpacity style={styles.locateButton} onPress={handleLocateUser}>
-          <LocateFixed size={24} color={COLORS.white} />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  const renderMapView = () => {
+    // Convert userLocation to the expected format
+    const convertedUserLocation = userLocation ? {
+      latitude: userLocation.coords.latitude,
+      longitude: userLocation.coords.longitude
+    } : null;
+
+    return (
+      <View style={styles.mapContainer}>
+        <MachineryMap 
+          equipment={equipment}
+          onReserve={handleReserve}
+          onMarkerPress={handleMarkerPress}
+          userLocation={convertedUserLocation}
+        />
+        {convertedUserLocation && (
+          <TouchableOpacity style={styles.locateButton} onPress={handleLocateUser}>
+            <LocateFixed size={24} color={COLORS.white} />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -135,6 +163,21 @@ export default function MachineryScreen() {
         title="Machinery Rental" 
         showBackButton={true}
       />
+      
+      {!hasLocationPermission && (
+        <View style={styles.permissionBanner}>
+          <AlertCircle size={20} color={COLORS.warning} />
+          <Text style={styles.permissionText}>
+            Location access is required for accurate distance calculations and map features.
+          </Text>
+          <TouchableOpacity 
+            style={styles.permissionButton} 
+            onPress={requestLocationPermission}
+          >
+            <Text style={styles.permissionButtonText}>Enable Location</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       
       <View style={styles.viewToggleContainer}>
         <TouchableOpacity
@@ -288,5 +331,34 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  permissionBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF3CD",
+    borderColor: "#FFEAA7",
+    borderWidth: 1,
+    padding: 12,
+    margin: 16,
+    marginBottom: 0,
+    borderRadius: 8,
+  },
+  permissionText: {
+    flex: 1,
+    marginLeft: 8,
+    marginRight: 8,
+    color: "#856404",
+    fontSize: 14,
+  },
+  permissionButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  permissionButtonText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

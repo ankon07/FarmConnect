@@ -17,7 +17,9 @@ export const COLORS = {
     // Status colors
     success: "#34A853",
     error: "#F44336",
+    danger: "#F44336", // Alias for error, used for critical status
     warning: "#FFC107",
+    info: "#4285F4", // Blue for informational messages
     
     // UI elements
     border: "#E0E0E0",

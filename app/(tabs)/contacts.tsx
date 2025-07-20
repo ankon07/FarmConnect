@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, FlatList, ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import { StyleSheet, View, FlatList, ActivityIndicator, Text, TouchableOpacity, Alert, Linking } from "react-native";
 import { findNearbyVets } from "@/services/api";
 import AppHeader from "@/components/common/AppHeader";
 import SearchBar from "@/components/common/SearchBar";
@@ -25,7 +25,7 @@ export default function ContactsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const filterOptions = ["All", "Veterinarians", "Agriculture Officers"];
+  const filterOptions = ["All", "Veterinarians", "Agriculture Officers", "Equipment Suppliers"];
 
   useEffect(() => {
     loadContacts();
@@ -62,9 +62,38 @@ export default function ContactsScreen() {
   };
 
   const handleCall = (phone: string) => {
-    console.log(`Calling ${phone}`);
-    // In a real app, we would use Linking to make a phone call
-    // Linking.openURL(`tel:${phone}`);
+    const phoneUrl = `tel:${phone}`;
+    Linking.canOpenURL(phoneUrl)
+      .then((supported) => {
+        if (supported) {
+          return Linking.openURL(phoneUrl);
+        } else {
+          Alert.alert('Error', 'Phone calls are not supported on this device');
+        }
+      })
+      .catch((error) => {
+        console.error('Error opening phone app:', error);
+        Alert.alert('Error', 'Unable to open phone app');
+      });
+  };
+
+  const handleEmergencyCall = () => {
+    const emergencyNumber = '01315206061';
+    Alert.alert(
+      'Emergency Helpline',
+      `Do you want to call the emergency helpline?\n${emergencyNumber}`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Call Now',
+          style: 'default',
+          onPress: () => handleCall(emergencyNumber),
+        },
+      ]
+    );
   };
 
   const filteredContacts = contacts.filter(contact => 
@@ -146,10 +175,12 @@ export default function ContactsScreen() {
       <View style={styles.emergencyContainer}>
         <TouchableOpacity 
           style={styles.emergencyButton}
-          onPress={() => handleCall("911")}
+          onPress={handleEmergencyCall}
         >
-          <Phone size={20} color={COLORS.white} />
-          <Text style={styles.emergencyText}>Emergency Helpline</Text>
+          <View style={styles.emergencyContent}>
+            <Phone size={20} color={COLORS.white} />
+            <Text style={styles.emergencyText}>Emergency Helpline</Text>
+          </View>
         </TouchableOpacity>
       </View>
     </View>
@@ -163,6 +194,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     padding: 16,
+    
   },
   filterContainer: {
     flexDirection: "row",
@@ -224,15 +256,26 @@ const styles = StyleSheet.create({
   emergencyButton: {
     backgroundColor: COLORS.error,
     borderRadius: 8,
-    padding: 12,
-    flexDirection: "row",
+    padding: 16,
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+  },
+  emergencyContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
   },
   emergencyText: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: "600",
+    marginLeft: 8,
+  },
+  emergencyNumber: {
+    color: COLORS.white,
+    fontSize: 14,
+    opacity: 0.9,
+    textAlign: "center",
   },
 });

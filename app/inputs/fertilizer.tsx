@@ -179,7 +179,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   listContent: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   storeCard: {
     backgroundColor: COLORS.cardBackground,
@@ -192,13 +193,14 @@ const styles = StyleSheet.create({
   storeHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "center", // Keep center for general vertical alignment
     marginBottom: 8,
   },
   storeName: {
     fontSize: 18,
     fontWeight: "600",
     color: COLORS.textPrimary,
+    marginRight: 8, // Add some space between name and indicator
   },
   storeDetails: {
     marginBottom: 16,

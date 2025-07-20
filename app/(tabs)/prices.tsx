@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, View, FlatList, ActivityIndicator, Text } from "react-native";
 import { fetchMarketPrices } from "@/services/api";
+import { getShwapnoProducts, searchShwapnoProducts, ShwapnoProduct } from "@/services/shwapnoApi";
 import AppHeader from "@/components/common/AppHeader";
 import TabView from "@/components/common/TabView";
 import SearchBar from "@/components/common/SearchBar";
 import FilterDropdown from "@/components/common/FilterDropdown";
 import PriceListItem from "@/components/prices/PriceListItem";
+import ShwapnoProductItem from "@/components/prices/ShwapnoProductItem";
 import { COLORS } from "@/constants/colors";
 
 interface PriceItem {
@@ -22,54 +24,89 @@ export default function PricesScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [prices, setPrices] = useState<PriceItem[]>([]);
+  const [shwapnoProducts, setShwapnoProducts] = useState<ShwapnoProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const tabs = ["Crop", "Livestock", "Fish"];
+  const tabs = ["Crop", "Livestock", "Fish", "Shwapno"];
   const filterOptions = ["All", "Wholesale", "Retail", "Nearby"];
 
   useEffect(() => {
-    loadPrices();
+    loadData();
   }, [activeTab, filter]);
 
-  const loadPrices = async () => {
+  const loadData = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const response = await fetchMarketPrices({
-        category: activeTab.toLowerCase(),
-        filter: filter.toLowerCase(),
-      });
-      
-      if (response.success) {
-        setPrices(response.data);
+      if (activeTab === "Shwapno") {
+        const products = await getShwapnoProducts();
+        setShwapnoProducts(products);
       } else {
-        setError("Failed to load market prices");
+        const response = await fetchMarketPrices({
+          category: activeTab.toLowerCase(),
+          filter: filter.toLowerCase(),
+        });
+        
+        if (response.success) {
+          setPrices(response.data);
+        } else {
+          setError("Failed to load market prices");
+        }
       }
     } catch (error) {
-      console.error("Error loading prices:", error);
-      setError("An error occurred while loading prices");
+      console.error("Error loading data:", error);
+      setError("An error occurred while loading data");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (query: string) => {
+  const handleSearch = async (query: string) => {
     setSearchQuery(query);
+    
+    if (activeTab === "Shwapno" && query.trim()) {
+      setLoading(true);
+      try {
+        const searchResults = await searchShwapnoProducts(query);
+        setShwapnoProducts(searchResults);
+      } catch (error) {
+        console.error("Error searching Shwapno products:", error);
+      } finally {
+        setLoading(false);
+      }
+    } else if (activeTab === "Shwapno" && !query.trim()) {
+      // Reset to all products when search is cleared
+      loadData();
+    }
   };
 
   const filteredPrices = prices.filter(item => 
     item.itemName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const renderItem = ({ item }: { item: PriceItem }) => (
+  const filteredShwapnoProducts = shwapnoProducts.filter(product =>
+    product.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const renderPriceItem = ({ item }: { item: PriceItem }) => (
     <PriceListItem
       itemName={item.itemName}
       itemPrice={item.price}
       itemUnit={item.unit}
       marketName={item.marketName}
       distance={item.distance}
+    />
+  );
+
+  const renderShwapnoItem = ({ item }: { item: ShwapnoProduct }) => (
+    <ShwapnoProductItem
+      product={item}
+      onPress={() => {
+        // Handle product press - could navigate to product details
+        console.log("Product pressed:", item.name);
+      }}
     />
   );
 
@@ -109,6 +146,20 @@ export default function PricesScreen() {
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
+      ) : activeTab === "Shwapno" ? (
+        filteredShwapnoProducts.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No products found</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={filteredShwapnoProducts}
+            renderItem={renderShwapnoItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+          />
+        )
       ) : filteredPrices.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No prices found</Text>
@@ -116,7 +167,7 @@ export default function PricesScreen() {
       ) : (
         <FlatList
           data={filteredPrices}
-          renderItem={renderItem}
+          renderItem={renderPriceItem}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

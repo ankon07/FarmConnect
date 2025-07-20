@@ -52,10 +52,10 @@ export default function WeatherScreen() {
         longitude: location.longitude,
       });
       
-      if (response.success) {
+      if (response.success && response.data) {
         setWeather(response.data);
       } else {
-        setError("Failed to load weather data");
+        setError(response.message || "Failed to load weather data.");
       }
     } catch (error) {
       console.error("Error loading weather data:", error);
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   forecastDate: {
-    width: 100,
+    width: 90, // Adjusted width to give more space to condition and temperature
     fontSize: 14,
     color: COLORS.textPrimary,
   },
@@ -289,20 +289,23 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 1, // Allow text to shrink
   },
   forecastIcon: {
-    width: 40,
-    height: 40,
+    width: 32, // Slightly smaller icon
+    height: 32,
     marginRight: 8,
   },
   forecastCondition: {
     fontSize: 14,
     color: COLORS.textSecondary,
+    flexShrink: 1, // Allow text to shrink
   },
   forecastTemperature: {
     flexDirection: "row",
-    width: 80,
+    width: 70, // Adjusted width to be slightly smaller
     justifyContent: "flex-end",
+    alignItems: "center",
   },
   maxTemp: {
     fontSize: 16,

@@ -4,12 +4,13 @@ import { useRouter } from "expo-router";
 import { useUser } from "@/context/UserContext";
 import { useLocation } from "@/context/LocationContext";
 import { fetchWeatherData, fetchQuickTips } from "@/services/api";
+import { getNotificationCount } from "@/services/bamisApi";
 import AppHeader from "@/components/common/AppHeader";
 import DashboardGridButton from "@/components/common/DashboardGridButton";
 import WeatherWidget from "@/components/home/WeatherWidget";
 import QuickTipsBanner from "@/components/home/QuickTipsBanner";
 import { COLORS } from "@/constants/colors";
-import { Cloud, Leaf, BarChart2, ShoppingCart, Truck, Wrench, Users, User } from "lucide-react-native";
+import { Cloud, Leaf, BarChart2, ShoppingCart, Truck, Wrench, Users, User, Building2, Brain } from "lucide-react-native";
 
 interface WeatherData {
   temperature: number;
@@ -32,14 +33,17 @@ export default function HomeScreen() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [tips, setTips] = useState<Tip[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   const loadData = async () => {
     try {
       const weatherData = await fetchWeatherData(location);
       const tipsData = await fetchQuickTips();
+      const notifCount = await getNotificationCount();
       
       setWeather(weatherData.data);
       setTips(tipsData.data);
+      setNotificationCount(notifCount);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     }
@@ -49,6 +53,10 @@ export default function HomeScreen() {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
+  };
+
+  const handleNotificationPress = () => {
+    router.push("/notifications" as any);
   };
 
   useEffect(() => {
@@ -67,6 +75,9 @@ export default function HomeScreen() {
       <AppHeader 
         title={location?.name || "Loading location..."} 
         showHelpButton={true}
+        showNotificationButton={true}
+        notificationCount={notificationCount}
+        onNotificationPress={handleNotificationPress}
       />
       
       <ScrollView 
@@ -80,7 +91,7 @@ export default function HomeScreen() {
           {getGreeting()}, {user?.name || "Farmer"}!
         </Text>
         
-        {weather && <WeatherWidget weather={weather} />}
+        <WeatherWidget />
         
         {tips.length > 0 && <QuickTipsBanner tips={tips} />}
         
@@ -124,6 +135,21 @@ export default function HomeScreen() {
             icon={<User size={32} color={COLORS.primary} />}
             label="Profile"
             onPress={() => router.push("/profile")}
+          />
+          <DashboardGridButton 
+            icon={<Building2 size={32} color={COLORS.primary} />}
+            label="Govt Services"
+            onPress={() => router.navigate("/(tabs)/govt-services" as any)}
+          />
+          <DashboardGridButton 
+            icon={<Leaf size={32} color={COLORS.success} />}
+            label="BADC Services"
+            onPress={() => router.navigate("/(tabs)/badc" as any)}
+          />
+          <DashboardGridButton 
+            icon={<Brain size={32} color={COLORS.primary} />}
+            label="AI Planning"
+            onPress={() => router.push("/ai-planning")}
           />
         </View>
       </ScrollView>
