@@ -154,6 +154,11 @@ export default function HomeScreen() {
             onPress={() => router.push("/ai-planning")}
           />
           <DashboardGridButton 
+            icon={<BarChart2 size={32} color={COLORS.secondary} />}
+            label={t("smart-scheduling")}
+            onPress={() => router.push("/scheduling")}
+          />
+          <DashboardGridButton 
             icon={<Store size={32} color={COLORS.primary} />}
             label={t("merchandise")}
             onPress={() => router.push("/merchandise")}
