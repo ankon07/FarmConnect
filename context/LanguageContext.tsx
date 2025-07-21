@@ -177,6 +177,18 @@ const staticTranslations: Record<string, Record<Language, string>> = {
   "unable-open-phone": { en: "Unable to open phone app", bn: "ফোন অ্যাপ খুলতে অক্ষম" },
   "emergency-call-confirm": { en: "Do you want to call the emergency helpline?", bn: "আপনি কি জরুরি হেল্পলাইনে কল করতে চান?" },
   
+  // Regional Officers
+  "regional-officers": { en: "Regional Officers", bn: "আঞ্চলিক কর্মকর্তা" },
+  "find-officers-by-location": { en: "Find Officers by Location", bn: "অবস্থান অনুযায়ী কর্মকর্তা খুঁজুন" },
+  "enter-district-name": { en: "Enter district name...", bn: "জেলার নাম লিখুন..." },
+  "location-search-hint": { en: "Enter your district name to find DAE officers in your area", bn: "আপনার এলাকার কৃষি সম্প্রসারণ কর্মকর্তা খুঁজতে জেলার নাম লিখুন" },
+  "finding-officers": { en: "Finding officers...", bn: "কর্মকর্তা খুঁজছি..." },
+  "no-officers-found-location": { en: "No officers found for this location", bn: "এই অবস্থানের জন্য কোন কর্মকর্তা পাওয়া যায়নি" },
+  "enter-location-find-officers": { en: "Enter your location to find DAE officers", bn: "কৃষি সম্প্রসারণ কর্মকর্তা খুঁজতে আপনার অবস্থান লিখুন" },
+  "call": { en: "Call", bn: "কল" },
+  "email-not-supported": { en: "Email is not supported on this device", bn: "এই ডিভাইসে ইমেইল সমর্থিত নয়" },
+  "unable-open-email": { en: "Unable to open email app", bn: "ইমেইল অ্যাপ খুলতে অক্ষম" },
+  
   // AI Planning specific (removing duplicates)
   "crop-farming-plan": { en: "Crop Farming Plan", bn: "ফসল চাষ পরিকল্পনা" },
   "fish-farming-plan": { en: "Fish Farming Plan", bn: "মৎস্য চাষ পরিকল্পনা" },
