@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, TouchableOpacity, Animated } from "react-native";
 import { COLORS } from "@/constants/colors";
 import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react-native";
+import { useTranslation } from "@/hooks/useTranslation";
+import TranslatedText from "@/components/common/TranslatedText";
 
 type Tip = {
   id: string;
@@ -14,6 +16,7 @@ type QuickTipsBannerProps = {
 };
 
 const QuickTipsBanner: React.FC<QuickTipsBannerProps> = ({ tips }) => {
+  const { t } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   const fadeAnim = new Animated.Value(1);
 
@@ -68,7 +71,7 @@ const QuickTipsBanner: React.FC<QuickTipsBannerProps> = ({ tips }) => {
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <AlertTriangle size={16} color={COLORS.primary} />
-          <Text style={styles.title}>Quick Tip</Text>
+          <Text style={styles.title}>{t("quick-tip")}</Text>
         </View>
         
         <View style={styles.navigation}>
@@ -87,8 +90,8 @@ const QuickTipsBanner: React.FC<QuickTipsBannerProps> = ({ tips }) => {
       </View>
       
       <Animated.View style={{ opacity: fadeAnim }}>
-        <Text style={styles.tipTitle}>{currentTip.title}</Text>
-        <Text style={styles.tipDescription}>{currentTip.description}</Text>
+        <TranslatedText text={currentTip.title} style={styles.tipTitle} />
+        <TranslatedText text={currentTip.description} style={styles.tipDescription} />
       </Animated.View>
     </View>
   );

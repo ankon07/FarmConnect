@@ -4,23 +4,42 @@ import { useRouter } from "expo-router";
 import { useUser } from "@/context/UserContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { useLanguage } from "@/context/LanguageContext";
+import { useLocation } from "@/context/LocationContext";
 import AppHeader from "@/components/common/AppHeader";
 import PrimaryButton from "@/components/common/PrimaryButton";
 import { COLORS } from "@/constants/colors";
-import { User, Settings, Bell, HelpCircle, LogOut, Languages } from "lucide-react-native";
+import { User, Settings, Bell, HelpCircle, LogOut, Languages, MapPin, RefreshCw } from "lucide-react-native";
 
 export default function ProfileScreen() {
   const { user, setUser } = useUser();
   const { t } = useTranslation();
   const { currentLanguage, setLanguage } = useLanguage();
+  const { location, isLoading: locationLoading, hasLocationPermission, requestLocationPermission, getCurrentLocation } = useLocation();
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
+  const [isRefreshingLocation, setIsRefreshingLocation] = useState(false);
 
   const handleLanguageToggle = (value: boolean) => {
     const newLanguage = value ? 'bn' : 'en';
     setLanguage(newLanguage);
+  };
+
+  const handleRefreshLocation = async () => {
+    if (!hasLocationPermission) {
+      const granted = await requestLocationPermission();
+      if (!granted) return;
+    }
+
+    setIsRefreshingLocation(true);
+    try {
+      await getCurrentLocation();
+    } catch (error) {
+      Alert.alert("Error", "Failed to get current location");
+    } finally {
+      setIsRefreshingLocation(false);
+    }
   };
 
   const handleLogout = () => {
@@ -85,11 +104,64 @@ export default function ProfileScreen() {
             style={styles.profileImage}
           />
           <Text style={styles.profileName}>{user?.name || t("farmer")}</Text>
-          <Text style={styles.profileLocation}>{user?.location || t("location-not-set", "Location not set")}</Text>
+          <Text style={styles.profileLocation}>
+            {locationLoading 
+              ? "Getting location..." 
+              : location?.name || user?.location || t("location-not-set", "Location not set")
+            }
+          </Text>
           
-          <TouchableOpacity style={styles.editProfileButton}>
+          <TouchableOpacity 
+            style={styles.editProfileButton}
+            onPress={() => router.push("/profile/edit")}
+          >
             <Text style={styles.editProfileText}>{t("edit-profile", "Edit Profile")}</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Real-time Location Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Current Location</Text>
+            <TouchableOpacity 
+              onPress={handleRefreshLocation}
+              disabled={isRefreshingLocation || locationLoading}
+              style={styles.refreshButton}
+            >
+              <RefreshCw 
+                size={20} 
+                color={COLORS.primary} 
+                style={[
+                  styles.refreshIcon,
+                  (isRefreshingLocation || locationLoading) && styles.refreshIconSpinning
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.locationRow}>
+            <View style={styles.settingInfo}>
+              <MapPin size={20} color={COLORS.primary} />
+              <View style={styles.locationInfo}>
+                <Text style={styles.settingText}>
+                  {locationLoading || isRefreshingLocation 
+                    ? "Getting location..." 
+                    : (location?.name || "Location not available")
+                  }
+                </Text>
+                {location && (
+                  <Text style={styles.locationSubtext}>
+                    {`${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}`}
+                  </Text>
+                )}
+                {!hasLocationPermission && (
+                  <Text style={styles.locationSubtext}>
+                    {"Location permission required"}
+                  </Text>
+                )}
+              </View>
+            </View>
+          </View>
         </View>
         
         <View style={styles.section}>
@@ -301,6 +373,34 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   languageSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  refreshButton: {
+    padding: 4,
+  },
+  refreshIcon: {
+    // Base refresh icon style
+  },
+  refreshIconSpinning: {
+    // Add spinning animation if needed
+    opacity: 0.6,
+  },
+  locationRow: {
+    paddingVertical: 8,
+  },
+  locationInfo: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  locationSubtext: {
     fontSize: 12,
     color: COLORS.textSecondary,
     marginTop: 2,

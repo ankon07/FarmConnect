@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Linking, TextInpu
 import { useRouter } from "expo-router";
 import AppHeader from "@/components/common/AppHeader";
 import { COLORS } from "@/constants/colors";
-import { ExternalLink, Fish, Smartphone, FileText, Search, MessageCircle, Phone, ChevronDown, ChevronUp } from "lucide-react-native";
+import { ExternalLink, Fish, Smartphone, FileText, Droplets, Wheat, Truck, BookOpen, Building, Wrench, DollarSign, Users, MapPin, Award, Microscope, Home, Calendar, GraduationCap, Shield } from "lucide-react-native";
 
 interface ServiceItem {
   id: number;
@@ -14,88 +14,12 @@ interface ServiceItem {
   description: string;
 }
 
-interface QAItem {
-  id: number;
-  question: string;
-  answer: string;
-  category?: string;
-}
 
 export default function GovtServicesScreen() {
   const router = useRouter();
-  const [showSMSData, setShowSMSData] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const qaData: QAItem[] = [
-    {
-      id: 1,
-      question: "ছাগল ঝিমিয়ে রোদ পোহালে করনীয়।",
-      answer: "আপনার উপজেলার VS এর সাথে ০১৬৪৪১৬৭৭২৭ যোগাযোগ করুন।",
-      category: "ছাগল"
-    },
-    {
-      id: 2,
-      question: "ফ্রিজিয়ান গরুর বাচ্চা, বয়স ৩৫ দিন, ল্যাম্পিং স্কিন রোগে আক্রমণ হয়েছে, এখন করণীয় কি?",
-      answer: "স্পেসিফিক ট্রিটমেন্ট নেই। ক্ষত হলে জীবানুনাশক ড্রেসিং করা এবং আলাদা রাখা, সেকেন্ডারী ইনফেকশন থেকে রক্ষার জন্য পেনিসিলিন ইনজেকশন দিবেন। মশা মাছি থাকা যাবেনা",
-      category: "গরু"
-    },
-    {
-      id: 3,
-      question: "15 দিন বয়সী পাতি হাঁসের বাচ্চার পা পরা রোগ হয়েছে। কি করনীয়?",
-      answer: "পানিতে ভিটামিন বি১ ও বি২ পাউডার খাওয়াবেন। খাবারে জাইমোভেট পাউডার ২-৫ দিন খাওয়াবেন",
-      category: "হাঁস"
-    },
-    {
-      id: 4,
-      question: "আমার ছাগল ঠান্ডা কাশি ছাগল ওজন ৫..৬ কেজি। এখন কি ওষুধ খাওয়াব",
-      answer: "Sagoler sardi kashi hole injection steronvet 2 ml kore i/m dine 1 bar 3 din ebong combipen 8 lac injection i/m dine 1 bar kore 3 din dite hobe",
-      category: "ছাগল"
-    },
-    {
-      id: 5,
-      question: "ছাগলগুলো সর্দি ও কাশি হয়েছে, গলায় শব্দ করে। কি করা যায়?",
-      answer: "Sagoler sardi kashi hole injection steronvet 2 ml kore i/m dine 1 bar 3 din ebong combipen 8 lac injection i/m dine 1 bar kore 3 din dite hobe",
-      category: "ছাগল"
-    },
-    {
-      id: 6,
-      question: "হাসের চুনা পায়খনা,নালি নালি,হলুদ পায়খানা",
-      answer: "চুনা পায়খানা করলে, Ciprocin/Cipro A vet syrap ১ মিলি ১-২ লিটার পানিতে ৩-৫ দিন দিবেন। প্রকৃতপক্ষে এর কোন চিকিৎসা নেই।",
-      category: "হাঁস"
-    },
-    {
-      id: 7,
-      question: "হাসের বাচ্চা ছোট অবস্হা কি কি ঔষধ ও কেমনে লালন পালন করব।",
-      answer: "২১ দিন বয়সে ডাক প্লেগ ও ২ মাস বয়সে ডাক কলেরা টিকা ও ১৫ দিন পর বুস্টার ডোজ এবং এরপর প্রতি ৬ মাসে একবার করে টিকা দিতে হবে।",
-      category: "হাঁস"
-    },
-    {
-      id: 8,
-      question: "কম খরচে ষাঁড় গরু দ্রুত মোটাতাজা করার উপায় কী?",
-      answer: "প্রথমে কৃমির ওষুধ Endex/Renadex ১ টা ট্যাবলেট/৭৫ কেজি, পরে কাচা ঘাস ও স্বাভাবিক সুষম খাবারের সাথে ভিটামিন ডিবি খাওয়াবেন।",
-      category: "গরু"
-    },
-    {
-      id: 9,
-      question: "ব্রয়লার মুরগীর বয়স ২০দিন সরদি,কাশি কিছুতেই থামছে না। cipro, levo, fastvet খাওয়াছছি। এখন কি করতে পারি।",
-      answer: "Enrocin সিরাপ ২ মিলি/লিটার পানিতে মিশিয়ে ৩-৫ দিবেন।",
-      category: "মুরগি"
-    },
-    {
-      id: 10,
-      question: "মুরগী গুটি হয়েছে।মশার কমডে। কি করবো",
-      answer: "Pox rog hole potash pani die gha dhue diben. pow. anidox 20gm 1gm/ 1liter water fed once daily for 7days",
-      category: "মুরগি"
-    }
-  ];
-
-  const filteredQA = qaData.filter(item =>
-    item.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.answer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.category && item.category.includes(searchQuery))
-  );
 
   const services: ServiceItem[] = [
+    // Existing Fisheries & Livestock Services
     {
       id: 1,
       title: "Fish Advice System",
@@ -127,6 +51,352 @@ export default function GovtServicesScreen() {
       url: "https://www.bamis.gov.bd/bulletin/nation/current/",
       icon: <FileText size={24} color={COLORS.primary} />,
       description: "Real-time agricultural weather advisory bulletins with region-specific farming guidance, crop management, and livestock care recommendations."
+    },
+    
+    // Ministry of Agriculture Services (45 services)
+    {
+      id: 5,
+      title: "Irrigation Water Quality Testing",
+      titleBn: "সেচের পানির গুণাগুণ পরীক্ষা",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Droplets size={24} color={COLORS.primary} />,
+      description: "Test and analyze irrigation water quality for optimal crop production."
+    },
+    {
+      id: 6,
+      title: "Irrigation Scheme Service",
+      titleBn: "সেচ স্কীম সেবা",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Droplets size={24} color={COLORS.primary} />,
+      description: "Access irrigation scheme services and water management solutions."
+    },
+    {
+      id: 7,
+      title: "Pump Operator Selection",
+      titleBn: "পাম্প অপারেটর নির্বাচন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Users size={24} color={COLORS.primary} />,
+      description: "Selection and training services for irrigation pump operators."
+    },
+    {
+      id: 8,
+      title: "Irrigation Card Service",
+      titleBn: "সেচ কার্ড প্রদান",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <FileText size={24} color={COLORS.primary} />,
+      description: "Apply for and receive irrigation service cards for farmers."
+    },
+    {
+      id: 9,
+      title: "Pump Maintenance",
+      titleBn: "পাম্প রক্ষণাবেক্ষণ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Wrench size={24} color={COLORS.primary} />,
+      description: "Maintenance and repair services for irrigation pumps and equipment."
+    },
+    {
+      id: 10,
+      title: "Grain Storage for Small Farmers",
+      titleBn: "ক্ষুদ্র ও প্রান্তিক চাষীদের দানাদার শস্য গুদামজাতকরণ সুবিধা প্রদান",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Building size={24} color={COLORS.primary} />,
+      description: "Storage facilities and services for small and marginal farmers' grain crops."
+    },
+    {
+      id: 11,
+      title: "Online Fertilizer Recommendation",
+      titleBn: "অন-লাইন সার সুপারিশ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Wheat size={24} color={COLORS.primary} />,
+      description: "Get personalized fertilizer recommendations based on soil and crop analysis."
+    },
+    {
+      id: 12,
+      title: "Market Information Service",
+      titleBn: "বাজার তথ্য সরবরাহ/অনলাইনে প্রকাশ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <DollarSign size={24} color={COLORS.primary} />,
+      description: "Access real-time market prices and agricultural commodity information."
+    },
+    {
+      id: 13,
+      title: "Online Market Directory",
+      titleBn: "অনলাইন মার্কেট ডাইরেক্টরী",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <MapPin size={24} color={COLORS.primary} />,
+      description: "Directory of agricultural markets, buyers, and sellers across Bangladesh."
+    },
+    {
+      id: 14,
+      title: "Agricultural Machinery Subsidy",
+      titleBn: "কৃষি যন্ত্রপাতি ক্রয়ের ক্ষেত্রে ভর্তুকি প্রদান",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Truck size={24} color={COLORS.primary} />,
+      description: "Apply for government subsidies on agricultural machinery purchases."
+    },
+    {
+      id: 15,
+      title: "PhD Scholarship & Research Grant",
+      titleBn: "পিএইচডি বৃত্তি ও গবেষণা অনুদান প্রদান",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <GraduationCap size={24} color={COLORS.primary} />,
+      description: "Apply for PhD scholarships and research grants in agricultural sciences."
+    },
+    {
+      id: 16,
+      title: "National Crop Pest Museum Virtual Tour",
+      titleBn: "ন্যাশনাল ক্রপ পেস্ট মিউজিয়াম ভার্চুয়ালি পরিদর্শন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Microscope size={24} color={COLORS.primary} />,
+      description: "Virtual tour of the National Crop Pest Museum for educational purposes."
+    },
+    {
+      id: 17,
+      title: "Training Registration (BADC)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা নিবন্ধন (বিএডিসি)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for agricultural training programs, seminars, and workshops by BADC."
+    },
+    {
+      id: 18,
+      title: "Seed Sample Testing",
+      titleBn: "প্রত্যয়ন বহির্ভূত বীজ নমুনা সংগ্রহ ও পরীক্ষা",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Microscope size={24} color={COLORS.primary} />,
+      description: "Collection and testing of non-certified seed samples for quality assurance."
+    },
+    {
+      id: 19,
+      title: "Field Certification",
+      titleBn: "মাঠ প্রত্যয়ন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Award size={24} color={COLORS.primary} />,
+      description: "Field certification services for crop production and quality standards."
+    },
+    {
+      id: 20,
+      title: "Agricultural Research",
+      titleBn: "কৃষি বিষয়ক গবেষণা",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Microscope size={24} color={COLORS.primary} />,
+      description: "Access agricultural research services and collaborate with research institutions."
+    },
+    {
+      id: 21,
+      title: "Fertilizer Import Registration",
+      titleBn: "সার আমদানী নিবন্ধন ও নবায়ন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <FileText size={24} color={COLORS.primary} />,
+      description: "Registration and renewal services for fertilizer import licenses."
+    },
+    {
+      id: 22,
+      title: "Fertilizer Production Registration",
+      titleBn: "সার উৎপাদন নিবন্ধন ও নবায়ন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Building size={24} color={COLORS.primary} />,
+      description: "Registration and renewal for fertilizer manufacturing licenses."
+    },
+    {
+      id: 23,
+      title: "Fertilizer Dealer Registration",
+      titleBn: "সার পরিবেশক নিবন্ধন ও নবায়ন (সংরক্ষণ, বিতরণ, বিপণন, বিক্রয়)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Users size={24} color={COLORS.primary} />,
+      description: "Registration for fertilizer dealers, distributors, and retailers."
+    },
+    {
+      id: 24,
+      title: "Seed Dealer Registration",
+      titleBn: "বীজ ডিলার নিয়োগ ও নবায়ন আবেদন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Users size={24} color={COLORS.primary} />,
+      description: "Registration and renewal applications for seed dealers and distributors."
+    },
+    {
+      id: 25,
+      title: "Tube Well Installation License",
+      titleBn: "নলকূপ স্থাপনের লাইসেন্স (নতুন)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Droplets size={24} color={COLORS.primary} />,
+      description: "Apply for new tube well installation licenses for irrigation."
+    },
+    {
+      id: 26,
+      title: "Agricultural Marketing License",
+      titleBn: "কৃষি বিপণন লাইসেন্স প্রদান/নবায়ন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <DollarSign size={24} color={COLORS.primary} />,
+      description: "Obtain or renew agricultural marketing and trading licenses."
+    },
+    {
+      id: 27,
+      title: "Crop Variety Registration",
+      titleBn: "অনিয়ন্ত্রিত ফসলের জাত নিবন্ধন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Wheat size={24} color={COLORS.primary} />,
+      description: "Registration services for uncontrolled crop varieties and new cultivars."
+    },
+    {
+      id: 28,
+      title: "Seed Import Approval",
+      titleBn: "ফসলের বীজ আমদানি অনুমোদন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <FileText size={24} color={COLORS.primary} />,
+      description: "Approval process for importing crop seeds and planting materials."
+    },
+    {
+      id: 29,
+      title: "Agricultural Magazine Subscription",
+      titleBn: "মাসিক কৃষিকথা লেখা আহবান ও সাবস্ক্রিপশন (ম্যাগাজিন)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Subscribe to monthly agricultural magazine and submit articles."
+    },
+    {
+      id: 30,
+      title: "Venue Booking Service",
+      titleBn: "ভেন্যু ভাড়া/বুকিং এর অনুরোধ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Calendar size={24} color={COLORS.primary} />,
+      description: "Book venues and facilities for agricultural events and meetings."
+    },
+    {
+      id: 31,
+      title: "Seed Export Approval",
+      titleBn: "ফসলের বীজ রপ্তানি অনুমোদন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <FileText size={24} color={COLORS.primary} />,
+      description: "Approval process for exporting crop seeds and agricultural products."
+    },
+    {
+      id: 32,
+      title: "Existing Tube Well License",
+      titleBn: "বিদ্যমান নলকূপের লাইসেন্সের জন্য আবেদন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Droplets size={24} color={COLORS.primary} />,
+      description: "Apply for licenses for existing tube wells and irrigation systems."
+    },
+    {
+      id: 33,
+      title: "Hybrid Rice Seed Import",
+      titleBn: "বোরো হাইব্রিড ধানবীজ আমদানির অনুমোদন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Wheat size={24} color={COLORS.primary} />,
+      description: "Import approval for Boro hybrid rice seeds and varieties."
+    },
+    {
+      id: 34,
+      title: "Certified Seed Testing",
+      titleBn: "প্রত্যয়নের আওতাধীন বীজ পরীক্ষা",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Microscope size={24} color={COLORS.primary} />,
+      description: "Testing services for certified seeds and quality assurance."
+    },
+    {
+      id: 35,
+      title: "Pest Museum Visit Request",
+      titleBn: "ন্যাশনাল ক্রপ পেস্ট মিউজিয়াম সরাসরি পরিদর্শনের জন্য অনুরোধ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Calendar size={24} color={COLORS.primary} />,
+      description: "Request for direct visit to the National Crop Pest Museum."
+    },
+    {
+      id: 36,
+      title: "Virtual Soil Museum",
+      titleBn: "বাংলাদেশের ভার্চুয়াল মৃত্তিকা জাদুঘর",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Microscope size={24} color={COLORS.primary} />,
+      description: "Explore Bangladesh's virtual soil museum for educational purposes."
+    },
+    {
+      id: 37,
+      title: "Sponsored Training Request",
+      titleBn: "স্পন্সরড প্রশিক্ষণ/সেমিনার/কর্মশালা আয়োজনের অনুরোধ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Request for organizing sponsored training programs and workshops."
+    },
+    {
+      id: 38,
+      title: "Duplicate Certificate Request",
+      titleBn: "ডুপ্লিকেট সার্টিফিকেট উত্তোলনের আবেদন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <FileText size={24} color={COLORS.primary} />,
+      description: "Apply for duplicate certificates and official documents."
+    },
+    {
+      id: 39,
+      title: "Accommodation Service",
+      titleBn: "আবাসন/ডরমিটরি সেবার অনুরোধ",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Home size={24} color={COLORS.primary} />,
+      description: "Request accommodation and dormitory services for training participants."
+    },
+    {
+      id: 40,
+      title: "Resource Person Registration",
+      titleBn: "রিসোর্স পার্সন পুলে নিবন্ধন",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <Users size={24} color={COLORS.primary} />,
+      description: "Register as a resource person for agricultural training programs."
+    },
+    {
+      id: 41,
+      title: "Training Registration (BSRI)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা (বিএসআরআই)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by Bangladesh Sugarcane Research Institute."
+    },
+    {
+      id: 42,
+      title: "Training Registration (BINA)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা নিবন্ধন (বিনা)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by Bangladesh Institute of Nuclear Agriculture."
+    },
+    {
+      id: 43,
+      title: "Training Registration (BWMRI)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা নিবন্ধন (বিডাব্লিউএমআরআই)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by Bangladesh Wheat and Maize Research Institute."
+    },
+    {
+      id: 44,
+      title: "Training Registration (BARC)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা নিবন্ধন (বিএআরসি)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by Bangladesh Agricultural Research Council."
+    },
+    {
+      id: 45,
+      title: "Training Registration (NATA)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালার জন্য নিবন্ধন (নাটা)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by National Agricultural Training Academy."
+    },
+    {
+      id: 46,
+      title: "Training Registration (SRDI)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা নিবন্ধন (এসআরডিআই)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by Soil Resource Development Institute."
+    },
+    {
+      id: 47,
+      title: "Training Registration (CDB)",
+      titleBn: "প্রশিক্ষণ/সেমিনার/কর্মশালা নিবন্ধন (সিডিবি)",
+      url: "http://service.moa.gov.bd/portal/all-services",
+      icon: <BookOpen size={24} color={COLORS.primary} />,
+      description: "Register for training programs by Cotton Development Board."
     }
   ];
 
@@ -181,103 +451,36 @@ export default function GovtServicesScreen() {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.headerSection}>
-          <Text style={styles.pageTitle}>Fisheries & Livestock Services</Text>
-          <Text style={styles.pageSubtitle}>মৎস্য ও প্রাণী সেবাসমূহ</Text>
+          <Text style={styles.pageTitle}>Government Agricultural Services</Text>
+          <Text style={styles.pageSubtitle}>সরকারি কৃষি সেবাসমূহ</Text>
           <Text style={styles.description}>
-            Access government e-services related to fisheries and livestock management. 
-            These services are provided by the Government of Bangladesh to support farmers and agricultural businesses.
+            Access comprehensive government e-services for agriculture, fisheries, and livestock management. 
+            These services include 47+ digital services from Ministry of Agriculture and related departments to support farmers and agricultural businesses across Bangladesh.
           </Text>
         </View>
 
         <View style={styles.servicesContainer}>
-          <Text style={styles.sectionTitle}>Available Services</Text>
+          <Text style={styles.sectionTitle}>Available Services ({services.length})</Text>
+          <Text style={styles.servicesNote}>
+            Browse through {services.length} government e-services including irrigation, fertilizer management, seed certification, training programs, and more.
+          </Text>
           {services.map((service) => (
             <ServiceCard key={service.id} service={service} />
           ))}
-        </View>
-
-        {/* SMS Service Q&A Section */}
-        <View style={styles.smsSection}>
-          <TouchableOpacity 
-            style={styles.smsHeader}
-            onPress={() => setShowSMSData(!showSMSData)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.smsHeaderLeft}>
-              <Smartphone size={20} color={COLORS.primary} />
-              <Text style={styles.smsTitle}>SMS Service Q&A Database</Text>
-            </View>
-            {showSMSData ? (
-              <ChevronUp size={20} color={COLORS.textSecondary} />
-            ) : (
-              <ChevronDown size={20} color={COLORS.textSecondary} />
-            )}
-          </TouchableOpacity>
-          
-          {showSMSData && (
-            <View style={styles.smsContent}>
-              <View style={styles.smsInfo}>
-                <View style={styles.contactInfo}>
-                  <Phone size={16} color={COLORS.primary} />
-                  <Text style={styles.contactText}>Hotline: 16358 (Office hours only)</Text>
-                </View>
-                <Text style={styles.smsDescription}>
-                  Browse through common questions and expert answers about livestock health, diseases, and farming practices.
-                </Text>
-              </View>
-
-              <View style={styles.searchContainer}>
-                <Search size={20} color={COLORS.textSecondary} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search questions and answers..."
-                  placeholderTextColor={COLORS.textSecondary}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
-              </View>
-
-              <Text style={styles.resultsText}>
-                {filteredQA.length} টি প্রশ্ন ও উত্তর পাওয়া গেছে
-              </Text>
-
-              {filteredQA.slice(0, 5).map((item) => (
-                <View key={item.id} style={styles.qaCard}>
-                  <View style={styles.questionSection}>
-                    <MessageCircle size={16} color={COLORS.primary} />
-                    <Text style={styles.questionLabel}>প্রশ্ন:</Text>
-                    {item.category && (
-                      <View style={styles.categoryBadge}>
-                        <Text style={styles.categoryText}>{item.category}</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.questionText}>{item.question}</Text>
-                  
-                  <View style={styles.answerSection}>
-                    <Text style={styles.answerLabel}>উত্তর:</Text>
-                    <Text style={styles.answerText}>{item.answer}</Text>
-                  </View>
-                </View>
-              ))}
-
-              {filteredQA.length > 5 && (
-                <Text style={styles.moreResultsText}>
-                  আরও {filteredQA.length - 5} টি ফলাফল রয়েছে। আরও দেখতে সার্চ ব্যবহার করুন।
-                </Text>
-              )}
-            </View>
-          )}
         </View>
 
         <View style={styles.infoSection}>
           <Text style={styles.infoTitle}>About These Services</Text>
           <Text style={styles.infoText}>
             These e-services are part of the Bangladesh National Portal initiative to digitize government services. 
-            They provide farmers and agricultural businesses with easy access to important information and licensing services.
+            The collection includes services from Ministry of Agriculture, Department of Fisheries, Department of Livestock Services, and various agricultural research institutes.
           </Text>
           <Text style={styles.infoText}>
-            For technical support or additional information, please contact the respective department or visit the Bangladesh National Portal.
+            Services cover irrigation management, fertilizer and seed licensing, agricultural research, training programs, 
+            market information, and quality certification. For technical support, contact the respective department.
+          </Text>
+          <Text style={styles.infoText}>
+            <Text style={styles.helplineText}>Agricultural Helpline: 3331 or 16123</Text>
           </Text>
         </View>
       </ScrollView>
@@ -394,131 +597,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 8,
   },
-  smsSection: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    overflow: "hidden",
-  },
-  smsHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    backgroundColor: COLORS.lightBackground,
-  },
-  smsHeaderLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  smsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginLeft: 8,
-  },
-  smsContent: {
-    padding: 16,
-  },
-  smsInfo: {
-    marginBottom: 16,
-  },
-  contactInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  contactText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginLeft: 8,
-  },
-  smsDescription: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.inputBackground,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    marginLeft: 8,
-  },
-  resultsText: {
+  servicesNote: {
     fontSize: 14,
     color: COLORS.textSecondary,
     marginBottom: 16,
-    textAlign: "center",
-  },
-  qaCard: {
-    backgroundColor: COLORS.background,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  questionSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  questionLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.primary,
-    marginLeft: 8,
-  },
-  categoryBadge: {
-    backgroundColor: `${COLORS.primary}15`,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    marginLeft: "auto",
-  },
-  categoryText: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: "500",
-  },
-  questionText: {
-    fontSize: 14,
-    color: COLORS.textPrimary,
     lineHeight: 20,
-    marginBottom: 12,
-  },
-  answerSection: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 8,
-  },
-  answerLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: COLORS.success,
-    marginBottom: 4,
-  },
-  answerText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  moreResultsText: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    textAlign: "center",
     fontStyle: "italic",
-    marginTop: 8,
+  },
+  helplineText: {
+    fontWeight: "600",
+    color: COLORS.primary,
   },
 });

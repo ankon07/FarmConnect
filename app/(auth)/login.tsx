@@ -1,5 +1,5 @@
-import { useRouter } from "expo-router";
 import React, { useState } from "react";
+import { useRouter } from "expo-router";
 import {
   StyleSheet,
   Text,
@@ -12,22 +12,25 @@ import {
   ScrollView,
 } from "react-native";
 import { useUser } from "@/context/UserContext";
-import { loginUser } from "@/services/api";
+import { loginUser, signInWithGoogle, signInWithFacebook } from "@/services/authService";
+import { createUserProfile } from "@/services/userService";
 import PrimaryButton from "@/components/common/PrimaryButton";
 import { useTranslation } from "@/hooks/useTranslation";
 import { COLORS } from "@/constants/colors";
+import { Phone } from "lucide-react-native";
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  // Changed from username to email
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
   const { setUser } = useUser();
   const { t } = useTranslation();
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!username || !password) {
+    if (!email || !password) {
       setError(t("enter-both-credentials"));
       return;
     }
@@ -36,15 +39,53 @@ export default function LoginScreen() {
     setError("");
 
     try {
-      const response = await loginUser(username, password);
-      if (response.success && response.data) {
-        setUser(response.data);
+      const firebaseUser = await loginUser(email, password);
+      if (firebaseUser) {
+        const appUser = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email || "",
+          username: firebaseUser.email || "",
+          email: firebaseUser.email || "",
+          imageUrl: firebaseUser.photoURL || undefined,
+          location: undefined,
+        };
+        setUser(appUser);
         router.replace("/(tabs)");
       } else {
-        setError(response.message || t("login-failed"));
+        setError(t("login-failed"));
       }
-    } catch (err) {
-      setError(t("error-occurred"));
+    } catch (err: any) {
+      setError(err.message || t("error-occurred"));
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await signInWithGoogle();
+      // This will never execute since signInWithGoogle always throws
+    } catch (err: any) {
+      setError(err.message || "Google sign-in failed");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await signInWithFacebook();
+      // This will never execute since signInWithFacebook always throws
+    } catch (err: any) {
+      setError(err.message || "Facebook sign-in failed");
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -70,12 +111,13 @@ export default function LoginScreen() {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>{t("username")}</Text>
+            <Text style={styles.label}>{t("email")}</Text> {/* Changed label */}
             <TextInput
               style={styles.input}
-              value={username}
-              onChangeText={setUsername}
-              placeholder={t("enter-username")}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t("enter-email")} // Changed placeholder
+              keyboardType="email-address" // Added keyboardType
               autoCapitalize="none"
             />
           </View>
@@ -97,6 +139,51 @@ export default function LoginScreen() {
             isLoading={isLoading}
             variant="primary"
           />
+
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>{t("or") || "OR"}</Text>
+            <View style={styles.divider} />
+          </View>
+
+          <TouchableOpacity
+            style={styles.oauthButton}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}
+          >
+            <View style={styles.oauthButtonContent}>
+              <Image
+                source={{ uri: "https://developers.google.com/identity/images/g-logo.png" }}
+                style={styles.oauthIcon}
+              />
+              <Text style={styles.oauthButtonText}>{t("continue-with-google") || "Continue with Google"}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.oauthButton, styles.phoneButton]}
+            onPress={() => router.push("/phone-verification")}
+            disabled={isLoading}
+          >
+            <View style={styles.oauthButtonContent}>
+              <Phone size={20} color="#FFFFFF" style={styles.phoneIcon} />
+              <Text style={[styles.oauthButtonText, styles.phoneButtonText]}>{t("continue-with-phone") || "Continue with Phone"}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.oauthButton, styles.facebookButton]}
+            onPress={handleFacebookSignIn}
+            disabled={isLoading}
+          >
+            <View style={styles.oauthButtonContent}>
+              <Image
+                source={{ uri: "https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" }}
+                style={styles.oauthIcon}
+              />
+              <Text style={[styles.oauthButtonText, styles.facebookButtonText]}>{t("continue-with-facebook") || "Continue with Facebook"}</Text>
+            </View>
+          </TouchableOpacity>
 
           <View style={styles.signupContainer}>
             <Text style={styles.signupText}>{t("dont-have-account")}</Text>
@@ -177,5 +264,61 @@ const styles = StyleSheet.create({
   signupLink: {
     color: COLORS.primary,
     fontWeight: "bold",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.border,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+  },
+  oauthButton: {
+    backgroundColor: COLORS.inputBackground,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: "center",
+  },
+  oauthButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: COLORS.textPrimary,
+  },
+  facebookButton: {
+    backgroundColor: "#1877F2",
+    borderColor: "#1877F2",
+  },
+  facebookButtonText: {
+    color: "#FFFFFF",
+  },
+  phoneButton: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  oauthButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  oauthIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 12,
+  },
+  phoneIcon: {
+    marginRight: 12,
+  },
+  phoneButtonText: {
+    color: "#FFFFFF",
   },
 });

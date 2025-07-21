@@ -5,7 +5,11 @@ export const useTranslation = () => {
   const { translate, currentLanguage, getStaticTranslation, isTranslating } = useLanguage();
 
   const t = (key: string, fallback?: string): string => {
-    return getStaticTranslation(key) || fallback || key;
+    const translation = getStaticTranslation(key);
+    if (translation && translation !== key) {
+      return translation;
+    }
+    return fallback || key;
   };
 
   const tAsync = async (text: string): Promise<string> => {

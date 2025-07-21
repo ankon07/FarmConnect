@@ -140,12 +140,17 @@ const staticTranslations: Record<string, Record<Language, string>> = {
   // Login/Auth specific
   username: { en: "Username", bn: "ব্যবহারকারীর নাম" },
   "enter-username": { en: "Enter your username", bn: "আপনার ব্যবহারকারীর নাম লিখুন" },
+  "enter-email": { en: "Enter your email", bn: "আপনার ইমেইল লিখুন" },
   "enter-password": { en: "Enter your password", bn: "আপনার পাসওয়ার্ড লিখুন" },
   "smart-farming-companion": { en: "Your smart farming companion", bn: "আপনার স্মার্ট কৃষি সহায়ক" },
-  "enter-both-credentials": { en: "Please enter both username and password", bn: "অনুগ্রহ করে ব্যবহারকারীর নাম এবং পাসওয়ার্ড উভয়ই লিখুন" },
+  "enter-both-credentials": { en: "Please enter both email and password", bn: "অনুগ্রহ করে ইমেইল এবং পাসওয়ার্ড উভয়ই লিখুন" },
   "login-failed": { en: "Login failed. Please try again.", bn: "লগইন ব্যর্থ। অনুগ্রহ করে আবার চেষ্টা করুন।" },
   "error-occurred": { en: "An error occurred. Please try again.", bn: "একটি ত্রুটি ঘটেছে। অনুগ্রহ করে আবার চেষ্টা করুন।" },
   "sign-up": { en: "Sign up", bn: "সাইন আপ" },
+  "or": { en: "OR", bn: "অথবা" },
+  "continue-with-google": { en: "Continue with Google", bn: "গুগল দিয়ে চালিয়ে যান" },
+  "continue-with-phone": { en: "Continue with Phone", bn: "ফোন দিয়ে চালিয়ে যান" },
+  "continue-with-facebook": { en: "Continue with Facebook", bn: "ফেসবুক দিয়ে চালিয়ে যান" },
   
   // Profile specific
   "logout-confirm": { en: "Are you sure you want to logout?", bn: "আপনি কি নিশ্চিত যে আপনি লগআউট করতে চান?" },
@@ -203,6 +208,9 @@ const staticTranslations: Record<string, Record<Language, string>> = {
   "failed-download-plan": { en: "Failed to download plan. Please try again.", bn: "পরিকল্পনা ডাউনলোড করতে ব্যর্থ। অনুগ্রহ করে আবার চেষ্টা করুন।" },
   "select-option": { en: "Select Option", bn: "বিকল্প নির্বাচন করুন" },
   "please-specify": { en: "Please specify...", bn: "অনুগ্রহ করে উল্লেখ করুন..." },
+  
+  // Quick Tips
+  "quick-tip": { en: "Quick Tip", bn: "দ্রুত টিপস" },
 };
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

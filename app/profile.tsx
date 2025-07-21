@@ -7,6 +7,7 @@ import AppHeader from "@/components/common/AppHeader";
 import PrimaryButton from "@/components/common/PrimaryButton";
 import { COLORS } from "@/constants/colors";
 import { User, Settings, Bell, HelpCircle, LogOut, Languages } from "lucide-react-native";
+import { logoutUser } from "@/services/authService"; // Import logoutUser
 
 export default function ProfileScreen() {
   const { user, setUser } = useUser();
@@ -16,7 +17,7 @@ export default function ProfileScreen() {
   const [locationEnabled, setLocationEnabled] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
 
-  const handleLogout = () => {
+  const handleLogout = async () => { // Made async
     Alert.alert(
       "Logout",
       "Are you sure you want to logout?",
@@ -27,9 +28,15 @@ export default function ProfileScreen() {
         },
         {
           text: "Logout",
-          onPress: () => {
-            setUser(null);
-            router.replace("/login");
+          onPress: async () => { // Made async
+            try {
+              await logoutUser(); // Call Firebase logout
+              setUser(null); // Clear user in context
+              router.replace("/login");
+            } catch (error: any) {
+              Alert.alert("Logout Error", error.message);
+              console.error("Logout failed:", error);
+            }
           },
           style: "destructive",
         },
@@ -48,7 +55,7 @@ export default function ProfileScreen() {
       id: "account",
       title: "Account Settings",
       icon: <User size={24} color={COLORS.primary} />,
-      onPress: () => console.log("Account settings"),
+      onPress: () => router.push("/profile/edit"), // Navigate to edit profile screen
     },
     {
       id: "preferences",
@@ -80,7 +87,10 @@ export default function ProfileScreen() {
           <Text style={styles.profileName}>{user?.name || t("farmer")}</Text>
           <Text style={styles.profileLocation}>{user?.location || "Location not set"}</Text>
           
-          <TouchableOpacity style={styles.editProfileButton}>
+          <TouchableOpacity 
+            style={styles.editProfileButton}
+            onPress={() => router.push("/profile/edit")} // Navigate to edit profile screen
+          >
             <Text style={styles.editProfileText}>Edit Profile</Text>
           </TouchableOpacity>
         </View>
