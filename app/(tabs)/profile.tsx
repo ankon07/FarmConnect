@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView, Switch, Al
 import { useRouter } from "expo-router";
 import { useUser } from "@/context/UserContext";
 import { useTranslation } from "@/hooks/useTranslation";
+import { useLanguage } from "@/context/LanguageContext";
 import AppHeader from "@/components/common/AppHeader";
 import PrimaryButton from "@/components/common/PrimaryButton";
 import { COLORS } from "@/constants/colors";
@@ -11,22 +12,28 @@ import { User, Settings, Bell, HelpCircle, LogOut, Languages } from "lucide-reac
 export default function ProfileScreen() {
   const { user, setUser } = useUser();
   const { t } = useTranslation();
+  const { currentLanguage, setLanguage } = useLanguage();
   const router = useRouter();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(true);
   const [offlineMode, setOfflineMode] = useState(false);
 
+  const handleLanguageToggle = (value: boolean) => {
+    const newLanguage = value ? 'bn' : 'en';
+    setLanguage(newLanguage);
+  };
+
   const handleLogout = () => {
     Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
+      t("logout", "Logout"),
+      t("logout-confirm", "Are you sure you want to logout?"),
       [
         {
-          text: "Cancel",
+          text: t("cancel", "Cancel"),
           style: "cancel",
         },
         {
-          text: "Logout",
+          text: t("logout", "Logout"),
           onPress: () => {
             setUser(null);
             router.replace("/login");
@@ -46,19 +53,19 @@ export default function ProfileScreen() {
     },
     {
       id: "account",
-      title: "Account Settings",
+      title: t("account-settings", "Account Settings"),
       icon: <User size={24} color={COLORS.primary} />,
       onPress: () => console.log("Account settings"),
     },
     {
       id: "preferences",
-      title: "App Preferences",
+      title: t("app-preferences", "App Preferences"),
       icon: <Settings size={24} color={COLORS.primary} />,
       onPress: () => console.log("App preferences"),
     },
     {
       id: "help",
-      title: "Help & Support",
+      title: t("help-support", "Help & Support"),
       icon: <HelpCircle size={24} color={COLORS.primary} />,
       onPress: () => console.log("Help & support"),
     },
@@ -68,7 +75,7 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <AppHeader 
         title={t("profile")} 
-        showBackButton={true}
+        showBackButton={false}
       />
       
       <ScrollView style={styles.scrollView}>
@@ -78,20 +85,44 @@ export default function ProfileScreen() {
             style={styles.profileImage}
           />
           <Text style={styles.profileName}>{user?.name || t("farmer")}</Text>
-          <Text style={styles.profileLocation}>{user?.location || "Location not set"}</Text>
+          <Text style={styles.profileLocation}>{user?.location || t("location-not-set", "Location not set")}</Text>
           
           <TouchableOpacity style={styles.editProfileButton}>
-            <Text style={styles.editProfileText}>Edit Profile</Text>
+            <Text style={styles.editProfileText}>{t("edit-profile", "Edit Profile")}</Text>
           </TouchableOpacity>
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
+          <Text style={styles.sectionTitle}>{t("language")}</Text>
+          
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Languages size={20} color={COLORS.primary} />
+              <View style={styles.languageInfo}>
+                <Text style={styles.settingText}>
+                  {currentLanguage === 'bn' ? t("bangla") : t("english")}
+                </Text>
+                <Text style={styles.languageSubtext}>
+                  {currentLanguage === 'bn' ? 'English' : 'বাংলা'}
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={currentLanguage === 'bn'}
+              onValueChange={handleLanguageToggle}
+              trackColor={{ false: COLORS.border, true: COLORS.primaryLight }}
+              thumbColor={currentLanguage === 'bn' ? COLORS.primary : COLORS.lightGray}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t("notifications")}</Text>
           
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Bell size={20} color={COLORS.primary} />
-              <Text style={styles.settingText}>Push Notifications</Text>
+              <Text style={styles.settingText}>{t("push-notifications", "Push Notifications")}</Text>
             </View>
             <Switch
               value={notificationsEnabled}
@@ -104,7 +135,7 @@ export default function ProfileScreen() {
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Bell size={20} color={COLORS.primary} />
-              <Text style={styles.settingText}>SMS Alerts</Text>
+              <Text style={styles.settingText}>{t("sms-alerts", "SMS Alerts")}</Text>
             </View>
             <Switch
               value={locationEnabled}
@@ -117,7 +148,7 @@ export default function ProfileScreen() {
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
               <Bell size={20} color={COLORS.primary} />
-              <Text style={styles.settingText}>Offline Mode</Text>
+              <Text style={styles.settingText}>{t("offline-mode", "Offline Mode")}</Text>
             </View>
             <Switch
               value={offlineMode}
@@ -129,7 +160,7 @@ export default function ProfileScreen() {
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Settings</Text>
+          <Text style={styles.sectionTitle}>{t("settings")}</Text>
           
           {profileOptions.map((option) => (
             <TouchableOpacity
@@ -147,7 +178,7 @@ export default function ProfileScreen() {
         
         <View style={styles.logoutContainer}>
           <PrimaryButton
-            title="Logout"
+            title={t("logout", "Logout")}
             onPress={handleLogout}
             variant="secondary"
             icon={<LogOut size={20} color={COLORS.error} />}
@@ -265,5 +296,13 @@ const styles = StyleSheet.create({
   versionText: {
     fontSize: 14,
     color: COLORS.textSecondary,
+  },
+  languageInfo: {
+    marginLeft: 12,
+  },
+  languageSubtext: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
 });

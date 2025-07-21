@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import AppHeader from "@/components/common/AppHeader";
 import PrimaryButton from "@/components/common/PrimaryButton";
 import FilterDropdown from "@/components/common/FilterDropdown";
+import { useTranslation } from "@/hooks/useTranslation";
 import { COLORS } from "@/constants/colors";
 import { generateFarmingPlan } from "@/services/geminiApi";
 import { translateText, translateStructuredContent } from "@/services/translationApi"; // Import the translation service
@@ -31,6 +32,7 @@ interface CropFormData {
 
 export default function CropPlanning() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<CropFormData>({
     farmSize: "",
     soilType: "",
@@ -152,7 +154,7 @@ export default function CropPlanning() {
     const missingFields = requiredFields.filter(field => !formData[field as keyof CropFormData]);
     
     if (missingFields.length > 0) {
-      Alert.alert("Missing Information", "Please fill in all required fields marked with *");
+      Alert.alert(t("missing-information"), t("fill-required-fields"));
       return;
     }
 
@@ -521,7 +523,7 @@ Generated on: ${new Date().toLocaleDateString()}`;
   return (
     <View style={styles.container}>
       <AppHeader 
-        title="Crop Planning" 
+        title={t("crop-planning")} 
         showBackButton={true}
       />
       
@@ -532,9 +534,9 @@ Generated on: ${new Date().toLocaleDateString()}`;
         keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Crop Farming Plan</Text>
+        <Text style={styles.title}>{t("crop-farming-plan")}</Text>
         <Text style={styles.subtitle}>
-          Fill out the details below to get personalized crop farming recommendations
+          {t("fill-details-crop")}
         </Text>
 
         <InputField 
@@ -634,7 +636,7 @@ Generated on: ${new Date().toLocaleDateString()}`;
         />
 
         <PrimaryButton
-          title={loading ? "Generating Plan..." : "Generate AI Plan"}
+          title={loading ? t("generating-plan") : t("generate-ai-plan")}
           onPress={handleSubmit}
           disabled={loading}
           style={styles.submitButton}
@@ -643,11 +645,11 @@ Generated on: ${new Date().toLocaleDateString()}`;
         {aiResponse && (
           <View style={styles.responseContainer}>
             <View style={styles.responseHeader}>
-              <Text style={styles.responseTitle}>🤖 AI Recommendations</Text>
-              <Text style={styles.responseSubtitle}>Personalized farming plan based on your inputs</Text>
+              <Text style={styles.responseTitle}>🤖 {t("ai-recommendations")}</Text>
+              <Text style={styles.responseSubtitle}>{t("personalized-crop-plan")}</Text>
               {translatedResponse && (
                 <PrimaryButton
-                  title={showTranslated ? "Show Original" : "Show Translated (Bangla)"}
+                  title={showTranslated ? t("show-original") : t("show-translated-bangla")}
                   onPress={() => setShowTranslated(!showTranslated)}
                   style={styles.toggleButton}
                   textStyle={styles.toggleButtonText}

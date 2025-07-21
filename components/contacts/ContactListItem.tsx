@@ -2,6 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View, Image, TouchableOpacity } from "react-native";
 import { COLORS } from "@/constants/colors";
 import { Phone } from "lucide-react-native";
+import { useTranslatedText } from "@/hooks/useTranslation";
 
 type ContactListItemProps = {
   name: string;
@@ -18,6 +19,9 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
   imageUrl,
   onCall,
 }) => {
+  const { translatedText: translatedTitle } = useTranslatedText(title);
+  const { translatedText: translatedLocation } = useTranslatedText(location);
+
   return (
     <View style={styles.container}>
       <Image
@@ -27,8 +31,8 @@ const ContactListItem: React.FC<ContactListItemProps> = ({
       
       <View style={styles.infoContainer}>
         <Text style={styles.name}>{name}</Text>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.location}>{location}</Text>
+        <Text style={styles.title}>{translatedTitle}</Text>
+        <Text style={styles.location}>{translatedLocation}</Text>
       </View>
       
       <TouchableOpacity

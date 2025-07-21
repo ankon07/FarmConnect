@@ -4,6 +4,7 @@ import { COLORS } from "@/constants/colors";
 import { Cloud, Wind, Droplets } from "lucide-react-native";
 import { fetchWeatherForecast } from "@/services/api";
 import { useLocation } from "@/context/LocationContext";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface WeatherData {
   current: {
@@ -31,6 +32,7 @@ interface WeatherData {
 
 const WeatherWidget: React.FC = () => {
   const { location } = useLocation();
+  const { t } = useTranslation();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ const WeatherWidget: React.FC = () => {
   const loadWeatherData = async () => {
     if (!location) {
       setLoading(false);
-      setError("Location not available.");
+      setError(t("location-not-available"));
       return;
     }
     
@@ -58,11 +60,11 @@ const WeatherWidget: React.FC = () => {
       if (response.success && response.data) {
         setWeather(response.data);
       } else {
-        setError(response.message || "Failed to load weather data.");
+        setError(response.message || t("weather-error"));
       }
     } catch (error) {
       console.error("Error loading weather data:", error);
-      setError("An error occurred while loading weather data");
+      setError(t("weather-load-error"));
     } finally {
       setLoading(false);
     }
@@ -72,7 +74,7 @@ const WeatherWidget: React.FC = () => {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="small" color={COLORS.primary} />
-        <Text style={styles.loadingText}>Loading weather...</Text>
+        <Text style={styles.loadingText}>{t("loading-weather")}</Text>
       </View>
     );
   }
@@ -88,7 +90,7 @@ const WeatherWidget: React.FC = () => {
   if (!weather) {
     return (
       <View style={styles.container}>
-        <Text style={styles.emptyText}>No weather data available</Text>
+        <Text style={styles.emptyText}>{t("no-weather-data")}</Text>
       </View>
     );
   }
@@ -105,19 +107,19 @@ const WeatherWidget: React.FC = () => {
       
       <View style={styles.weatherInfoRow}>
         <Cloud size={20} color={COLORS.textSecondary} />
-        <Text style={styles.weatherLabel}>Temperature</Text>
+        <Text style={styles.weatherLabel}>{t("temperature")}</Text>
         <Text style={styles.weatherValue}>{weather.current.temperature}°C</Text>
       </View>
 
       <View style={styles.weatherInfoRow}>
         <Droplets size={20} color={COLORS.textSecondary} />
-        <Text style={styles.weatherLabel}>Humidity</Text>
+        <Text style={styles.weatherLabel}>{t("humidity")}</Text>
         <Text style={styles.weatherValue}>{weather.current.humidity}%</Text>
       </View>
 
       <View style={styles.weatherInfoRow}>
         <Wind size={20} color={COLORS.textSecondary} />
-        <Text style={styles.weatherLabel}>Wind Speed</Text>
+        <Text style={styles.weatherLabel}>{t("wind-speed")}</Text>
         <Text style={styles.weatherValue}>{weather.current.windSpeed} km/h</Text>
       </View>
     </View>

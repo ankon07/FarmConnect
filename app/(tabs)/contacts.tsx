@@ -4,6 +4,7 @@ import { findNearbyVets } from "@/services/api";
 import AppHeader from "@/components/common/AppHeader";
 import SearchBar from "@/components/common/SearchBar";
 import ContactListItem from "@/components/contacts/ContactListItem";
+import { useTranslation } from "@/hooks/useTranslation";
 import { COLORS } from "@/constants/colors";
 import { useLocation } from "@/context/LocationContext";
 import { Phone } from "lucide-react-native";
@@ -19,13 +20,19 @@ interface Contact {
 
 export default function ContactsScreen() {
   const { location } = useLocation();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const filterOptions = ["All", "Veterinarians", "Agriculture Officers", "Equipment Suppliers"];
+  const getFilterOptions = () => [
+    { key: "All", label: t("all") },
+    { key: "Veterinarians", label: t("veterinarians") },
+    { key: "Agriculture Officers", label: t("agriculture-officers") },
+    { key: "Equipment Suppliers", label: t("equipment-suppliers") }
+  ];
 
   useEffect(() => {
     loadContacts();
@@ -47,11 +54,11 @@ export default function ContactsScreen() {
       if (response.success) {
         setContacts(response.data);
       } else {
-        setError("Failed to load contacts");
+        setError(t("failed-load-contacts"));
       }
     } catch (error) {
       console.error("Error loading contacts:", error);
-      setError("An error occurred while loading contacts");
+      setError(t("error-loading-contacts"));
     } finally {
       setLoading(false);
     }
@@ -68,27 +75,27 @@ export default function ContactsScreen() {
         if (supported) {
           return Linking.openURL(phoneUrl);
         } else {
-          Alert.alert('Error', 'Phone calls are not supported on this device');
+          Alert.alert(t("error"), t("phone-not-supported"));
         }
       })
       .catch((error) => {
         console.error('Error opening phone app:', error);
-        Alert.alert('Error', 'Unable to open phone app');
+        Alert.alert(t("error"), t("unable-open-phone"));
       });
   };
 
   const handleEmergencyCall = () => {
     const emergencyNumber = '01315206061';
     Alert.alert(
-      'Emergency Helpline',
-      `Do you want to call the emergency helpline?\n${emergencyNumber}`,
+      t("emergency-helpline"),
+      `${t("emergency-call-confirm")}\n${emergencyNumber}`,
       [
         {
-          text: 'Cancel',
+          text: t("cancel"),
           style: 'cancel',
         },
         {
-          text: 'Call Now',
+          text: t("call-now"),
           style: 'default',
           onPress: () => handleCall(emergencyNumber),
         },
@@ -114,37 +121,37 @@ export default function ContactsScreen() {
   return (
     <View style={styles.container}>
       <AppHeader 
-        title="Expert Contacts" 
+        title={t("expert-contacts")} 
         showBackButton={false}
         showLocation={true}
-        location={location?.name || "Loading location..."}
+        location={location?.name || t("loading-location")}
       />
       
       <View style={styles.searchContainer}>
         <SearchBar 
-          placeholder="Search contacts..."
+          placeholder={t("search-contacts")}
           onSearch={handleSearch}
           value={searchQuery}
         />
       </View>
       
       <View style={styles.filterContainer}>
-        {filterOptions.map((option) => (
+        {getFilterOptions().map((option) => (
           <TouchableOpacity
-            key={option}
+            key={option.key}
             style={[
               styles.filterButton,
-              filter === option && styles.activeFilterButton,
+              filter === option.key && styles.activeFilterButton,
             ]}
-            onPress={() => setFilter(option)}
+            onPress={() => setFilter(option.key)}
           >
             <Text
               style={[
                 styles.filterText,
-                filter === option && styles.activeFilterText,
+                filter === option.key && styles.activeFilterText,
               ]}
             >
-              {option}
+              {option.label}
             </Text>
           </TouchableOpacity>
         ))}
@@ -160,7 +167,7 @@ export default function ContactsScreen() {
         </View>
       ) : filteredContacts.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No contacts found</Text>
+          <Text style={styles.emptyText}>{t("no-contacts-found")}</Text>
         </View>
       ) : (
         <FlatList
@@ -179,7 +186,7 @@ export default function ContactsScreen() {
         >
           <View style={styles.emergencyContent}>
             <Phone size={20} color={COLORS.white} />
-            <Text style={styles.emergencyText}>Emergency Helpline</Text>
+            <Text style={styles.emergencyText}>{t("emergency-helpline")}</Text>
           </View>
         </TouchableOpacity>
       </View>

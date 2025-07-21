@@ -1,9 +1,12 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Home, Leaf, ShoppingCart, Users, BarChart2, Building2 } from "lucide-react-native";
+import { Home, Leaf, ShoppingCart, Users, User } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function TabLayout() {
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -24,50 +27,36 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t("home"),
           tabBarIcon: ({ color }) => <Home size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="diagnose"
         options={{
-          title: "Diagnose",
+          title: t("diagnose"),
           tabBarIcon: ({ color }) => <Leaf size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="prices"
-        options={{
-          title: "Prices",
-          tabBarIcon: ({ color }) => <BarChart2 size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="inputs"
         options={{
-          title: "Inputs",
+          title: t("inputs"),
           tabBarIcon: ({ color }) => <ShoppingCart size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="contacts"
         options={{
-          title: "Contacts",
+          title: t("contacts"),
           tabBarIcon: ({ color }) => <Users size={24} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="govt-services"
+        name="profile"
         options={{
-          title: "Govt Services",
-          tabBarIcon: ({ color }) => <Building2 size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="badc"
-        options={{
-          title: "BADC",
-          tabBarIcon: ({ color }) => <Leaf size={24} color={color} />,
+          title: t("profile"),
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
         }}
       />
     </Tabs>

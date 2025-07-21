@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ScrollView, RefreshControl } from "react-native
 import { useRouter } from "expo-router";
 import { useUser } from "@/context/UserContext";
 import { useLocation } from "@/context/LocationContext";
+import { useTranslation } from "@/hooks/useTranslation";
 import { fetchWeatherData, fetchQuickTips } from "@/services/api";
 import { getNotificationCount } from "@/services/bamisApi";
 import AppHeader from "@/components/common/AppHeader";
@@ -10,7 +11,7 @@ import DashboardGridButton from "@/components/common/DashboardGridButton";
 import WeatherWidget from "@/components/home/WeatherWidget";
 import QuickTipsBanner from "@/components/home/QuickTipsBanner";
 import { COLORS } from "@/constants/colors";
-import { Cloud, Leaf, BarChart2, ShoppingCart, Truck, Wrench, Users, User, Building2, Brain } from "lucide-react-native";
+import { Cloud, Leaf, BarChart2, ShoppingCart, Truck, Wrench, Users, User, Building2, Brain, Store } from "lucide-react-native";
 
 interface WeatherData {
   temperature: number;
@@ -29,6 +30,7 @@ interface Tip {
 export default function HomeScreen() {
   const { user } = useUser();
   const { location } = useLocation();
+  const { t } = useTranslation();
   const router = useRouter();
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [tips, setTips] = useState<Tip[]>([]);
@@ -65,15 +67,15 @@ export default function HomeScreen() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning";
-    if (hour < 18) return "Good Afternoon";
-    return "Good Evening";
+    if (hour < 12) return t("good-morning");
+    if (hour < 18) return t("good-afternoon");
+    return t("good-evening");
   };
 
   return (
     <View style={styles.container}>
       <AppHeader 
-        title={location?.name || "Loading location..."} 
+        title={location?.name || t("loading-location")} 
         showHelpButton={true}
         showNotificationButton={true}
         notificationCount={notificationCount}
@@ -88,7 +90,7 @@ export default function HomeScreen() {
         }
       >
         <Text style={styles.greeting}>
-          {getGreeting()}, {user?.name || "Farmer"}!
+          {getGreeting()}, {user?.name || t("farmer")}!
         </Text>
         
         <WeatherWidget />
@@ -98,58 +100,63 @@ export default function HomeScreen() {
         <View style={styles.gridContainer}>
           <DashboardGridButton 
             icon={<Leaf size={32} color={COLORS.primary} />}
-            label="Diagnose"
-            onPress={() => router.push("/diagnose")}
+            label={t("diagnose")}
+            onPress={() => router.navigate("/(tabs)/diagnose" as any)}
           />
           <DashboardGridButton 
             icon={<BarChart2 size={32} color={COLORS.primary} />}
-            label="Market Prices"
-            onPress={() => router.push("/prices")}
+            label={t("market-prices")}
+            onPress={() => router.push("/prices" as any)}
           />
           <DashboardGridButton 
             icon={<ShoppingCart size={32} color={COLORS.primary} />}
-            label="Fertilizer"
+            label={t("fertilizer")}
             onPress={() => router.push("/inputs/fertilizer")}
           />
           <DashboardGridButton 
             icon={<Truck size={32} color={COLORS.primary} />}
-            label="Machinery"
+            label={t("machinery")}
             onPress={() => router.push("/inputs/machinery")}
           />
           <DashboardGridButton 
             icon={<Wrench size={32} color={COLORS.primary} />}
-            label="Repair"
+            label={t("repair")}
             onPress={() => router.push("/inputs/repair")}
           />
           <DashboardGridButton 
             icon={<Users size={32} color={COLORS.primary} />}
-            label="Contacts"
-            onPress={() => router.push("/contacts")}
+            label={t("contacts")}
+            onPress={() => router.navigate("/(tabs)/contacts" as any)}
           />
           <DashboardGridButton 
             icon={<Cloud size={32} color={COLORS.primary} />}
-            label="Weather"
+            label={t("weather")}
             onPress={() => router.push("/weather")}
           />
           <DashboardGridButton 
             icon={<User size={32} color={COLORS.primary} />}
-            label="Profile"
-            onPress={() => router.push("/profile")}
+            label={t("profile")}
+            onPress={() => router.navigate("/(tabs)/profile" as any)}
           />
           <DashboardGridButton 
             icon={<Building2 size={32} color={COLORS.primary} />}
-            label="Govt Services"
-            onPress={() => router.navigate("/(tabs)/govt-services" as any)}
+            label={t("govt-services")}
+            onPress={() => router.push("/govt-services" as any)}
           />
           <DashboardGridButton 
             icon={<Leaf size={32} color={COLORS.success} />}
-            label="BADC Services"
-            onPress={() => router.navigate("/(tabs)/badc" as any)}
+            label={t("badc-services")}
+            onPress={() => router.push("/badc" as any)}
           />
           <DashboardGridButton 
             icon={<Brain size={32} color={COLORS.primary} />}
-            label="AI Planning"
+            label={t("ai-planning")}
             onPress={() => router.push("/ai-planning")}
+          />
+          <DashboardGridButton 
+            icon={<Store size={32} color={COLORS.primary} />}
+            label={t("merchandise")}
+            onPress={() => router.push("/merchandise")}
           />
         </View>
       </ScrollView>

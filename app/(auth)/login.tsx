@@ -14,6 +14,7 @@ import {
 import { useUser } from "@/context/UserContext";
 import { loginUser } from "@/services/api";
 import PrimaryButton from "@/components/common/PrimaryButton";
+import { useTranslation } from "@/hooks/useTranslation";
 import { COLORS } from "@/constants/colors";
 
 export default function LoginScreen() {
@@ -22,11 +23,12 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const { setUser } = useUser();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!username || !password) {
-      setError("Please enter both username and password");
+      setError(t("enter-both-credentials"));
       return;
     }
 
@@ -39,10 +41,10 @@ export default function LoginScreen() {
         setUser(response.data);
         router.replace("/(tabs)");
       } else {
-        setError(response.message || "Login failed. Please try again.");
+        setError(response.message || t("login-failed"));
       }
     } catch (err) {
-      setError("An error occurred. Please try again.");
+      setError(t("error-occurred"));
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -61,45 +63,45 @@ export default function LoginScreen() {
             style={styles.logo}
           />
           <Text style={styles.appName}>FarmConnect</Text>
-          <Text style={styles.tagline}>Your smart farming companion</Text>
+          <Text style={styles.tagline}>{t("smart-farming-companion")}</Text>
         </View>
 
         <View style={styles.formContainer}>
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={styles.label}>{t("username")}</Text>
             <TextInput
               style={styles.input}
               value={username}
               onChangeText={setUsername}
-              placeholder="Enter your username"
+              placeholder={t("enter-username")}
               autoCapitalize="none"
             />
           </View>
 
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Password</Text>
+            <Text style={styles.label}>{t("password")}</Text>
             <TextInput
               style={styles.input}
               value={password}
               onChangeText={setPassword}
-              placeholder="Enter your password"
+              placeholder={t("enter-password")}
               secureTextEntry
             />
           </View>
 
           <PrimaryButton
-            title="Login"
+            title={t("login")}
             onPress={handleLogin}
             isLoading={isLoading}
             variant="primary"
           />
 
           <View style={styles.signupContainer}>
-            <Text style={styles.signupText}>Don't have an account?</Text>
+            <Text style={styles.signupText}>{t("dont-have-account")}</Text>
             <TouchableOpacity onPress={() => router.push("/signup")}>
-              <Text style={styles.signupLink}>Sign up</Text>
+              <Text style={styles.signupLink}>{t("sign-up")}</Text>
             </TouchableOpacity>
           </View>
         </View>

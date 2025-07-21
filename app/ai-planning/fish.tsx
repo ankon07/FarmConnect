@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import AppHeader from "@/components/common/AppHeader";
 import PrimaryButton from "@/components/common/PrimaryButton";
 import FilterDropdown from "@/components/common/FilterDropdown";
+import { useTranslation } from "@/hooks/useTranslation";
 import { COLORS } from "@/constants/colors";
 import { generateFarmingPlan } from "@/services/geminiApi";
 import { translateText, translateStructuredContent } from "@/services/translationApi"; // Import the translation service
@@ -31,6 +32,7 @@ interface FishFormData {
 
 export default function FishPlanning() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<FishFormData>({
     pondSize: "",
     location: "",
@@ -161,7 +163,7 @@ export default function FishPlanning() {
     const missingFields = requiredFields.filter(field => !formData[field as keyof FishFormData]);
     
     if (missingFields.length > 0) {
-      Alert.alert("Missing Information", "Please fill in all required fields marked with *");
+      Alert.alert(t("missing-information"), t("fill-required-fields"));
       return;
     }
 
@@ -494,7 +496,7 @@ export default function FishPlanning() {
   return (
     <View style={styles.container}>
       <AppHeader 
-        title="Fish Planning" 
+        title={t("fish-planning")} 
         showBackButton={true}
       />
       
@@ -505,9 +507,9 @@ export default function FishPlanning() {
         keyboardDismissMode="none"
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Fish Farming Plan</Text>
+        <Text style={styles.title}>{t("fish-farming-plan")}</Text>
         <Text style={styles.subtitle}>
-          Fill out the details below to get personalized fish farming recommendations
+          {t("fill-details-fish")}
         </Text>
 
         <InputField 
