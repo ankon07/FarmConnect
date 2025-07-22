@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useScheduling } from '../context/SchedulingContext';
-import { useTranslation } from '../hooks/useTranslation';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useScheduling } from '../../context/SchedulingContext';
+import { useTranslation } from '../../hooks/useTranslation';
 import { 
   Calendar, 
   Clock, 
@@ -20,8 +21,8 @@ import {
   CheckCircle,
   Droplets
 } from 'lucide-react-native';
-import { COLORS as colors } from '../constants/colors';
-import AppHeader from '../components/common/AppHeader';
+import { COLORS as colors } from '../../constants/colors';
+import AppHeader from '../../components/common/AppHeader';
 
 export default function SchedulingScreen() {
   const router = useRouter();
@@ -34,12 +35,43 @@ export default function SchedulingScreen() {
     weatherAlerts,
     isLoading,
     refreshDashboard,
+    updateTask,
+    state,
+    overdueTasks,
+    todaysTasks,
   } = useScheduling();
 
   const [selectedTab, setSelectedTab] = useState<'overview' | 'tasks' | 'crops' | 'calendar'>('overview');
+  const [refreshing, setRefreshing] = useState(false);
+  const hasInitialized = useRef(false);
 
+  // Refresh data on initial mount
   useEffect(() => {
-    refreshDashboard();
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      refreshDashboard();
+    }
+  }, [refreshDashboard]);
+
+  // Refresh data every time the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (hasInitialized.current) {
+        refreshDashboard();
+      }
+    }, [])
+  );
+
+  // Handle pull-to-refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refreshDashboard();
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
 
   const getTaskPriorityColor = (priority: string) => {
@@ -63,7 +95,12 @@ export default function SchedulingScreen() {
   };
 
   const renderOverviewTab = () => (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView 
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       {/* Quick Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
@@ -87,6 +124,116 @@ export default function SchedulingScreen() {
           <Text style={styles.statLabel}>{translate('Weather Alerts')}</Text>
         </View>
       </View>
+
+      {/* Comprehensive History Statistics */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{translate('Scheduling History Overview')}</Text>
+        <View style={styles.historyStatsContainer}>
+          <View style={styles.historyStatCard}>
+            <CheckCircle size={20} color={colors.success} />
+            <Text style={styles.historyStatNumber}>
+              {state.tasks.filter(task => task.status === 'completed').length}
+            </Text>
+            <Text style={styles.historyStatLabel}>{translate('Completed Tasks')}</Text>
+          </View>
+          <View style={styles.historyStatCard}>
+            <AlertTriangle size={20} color={colors.error} />
+            <Text style={styles.historyStatNumber}>{overdueTasks.length}</Text>
+            <Text style={styles.historyStatLabel}>{translate('Overdue Tasks')}</Text>
+          </View>
+          <View style={styles.historyStatCard}>
+            <Activity size={20} color={colors.primary} />
+            <Text style={styles.historyStatNumber}>{state.crops.length}</Text>
+            <Text style={styles.historyStatLabel}>{translate('Total Crops')}</Text>
+          </View>
+          <View style={styles.historyStatCard}>
+            <Calendar size={20} color={colors.info} />
+            <Text style={styles.historyStatNumber}>{state.activities.length}</Text>
+            <Text style={styles.historyStatLabel}>{translate('Total Activities')}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Today's Tasks */}
+      {todaysTasks.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{translate("Today's Tasks")}</Text>
+          {todaysTasks.map((task) => (
+            <View key={task.id} style={[styles.taskCard, { borderLeftColor: colors.primary, borderLeftWidth: 4 }]}>
+              <View style={styles.taskHeader}>
+                <View style={[styles.priorityIndicator, { backgroundColor: getTaskPriorityColor(task.priority) }]} />
+                <Text style={styles.taskTitle}>{task.title}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(task.status) }]}>
+                  <Text style={styles.statusText}>{task.status}</Text>
+                </View>
+              </View>
+              <Text style={styles.taskDescription}>{task.description}</Text>
+              <View style={styles.taskFooter}>
+                <Text style={styles.taskDate}>
+                  {task.scheduledDate.toLocaleDateString()}
+                </Text>
+                <Text style={styles.taskDuration}>
+                  {task.estimatedDuration}h
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Overdue Tasks */}
+      {overdueTasks.length > 0 && (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.error }]}>{translate('Overdue Tasks')}</Text>
+          {overdueTasks.map((task) => (
+            <View key={task.id} style={[styles.taskCard, { borderLeftColor: colors.error, borderLeftWidth: 4 }]}>
+              <View style={styles.taskHeader}>
+                <View style={[styles.priorityIndicator, { backgroundColor: getTaskPriorityColor(task.priority) }]} />
+                <Text style={styles.taskTitle}>{task.title}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: colors.error }]}>
+                  <Text style={styles.statusText}>OVERDUE</Text>
+                </View>
+              </View>
+              <Text style={styles.taskDescription}>{task.description}</Text>
+              <View style={styles.taskFooter}>
+                <Text style={[styles.taskDate, { color: colors.error }]}>
+                  Due: {task.scheduledDate.toLocaleDateString()}
+                </Text>
+                <Text style={styles.taskDuration}>
+                  {task.estimatedDuration}h
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.completeButton, { backgroundColor: colors.error }]}
+                onPress={() => {
+                  Alert.alert(
+                    'Complete Overdue Task',
+                    `Mark "${task.title}" as completed?`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { 
+                        text: 'Complete', 
+                        onPress: async () => {
+                          try {
+                            await updateTask(task.id, { status: 'completed' });
+                            Alert.alert('Success', 'Overdue task marked as completed');
+                            await refreshDashboard();
+                          } catch (error) {
+                            console.error('Error completing task:', error);
+                            Alert.alert('Error', 'Failed to complete task');
+                          }
+                        }
+                      }
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.completeButtonText}>{translate('Mark Complete')}</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      )}
 
       {/* Weather Alerts */}
       {weatherAlerts.length > 0 && (
@@ -207,19 +354,163 @@ export default function SchedulingScreen() {
           ))
         )}
       </View>
+
+      {/* Complete Scheduling History */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{translate('Complete Scheduling History')}</Text>
+        
+        {/* All Tasks History */}
+        <View style={styles.historySubSection}>
+          <Text style={styles.historySubTitle}>{translate('All Tasks History')}</Text>
+          {state.tasks.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Clock size={32} color={colors.textSecondary} />
+              <Text style={styles.emptyStateText}>{translate('No tasks in history')}</Text>
+            </View>
+          ) : (
+            state.tasks
+              .sort((a, b) => new Date(b.scheduledDate).getTime() - new Date(a.scheduledDate).getTime())
+              .slice(0, 10)
+              .map((task) => (
+                <View key={task.id} style={[styles.taskCard, styles.historyCard]}>
+                  <View style={styles.taskHeader}>
+                    <View style={[styles.priorityIndicator, { backgroundColor: getTaskPriorityColor(task.priority) }]} />
+                    <Text style={styles.taskTitle}>{task.title}</Text>
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(task.status) }]}>
+                      <Text style={styles.statusText}>{task.status}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.taskDescription}>{task.description}</Text>
+                  <View style={styles.taskFooter}>
+                    <Text style={styles.taskDate}>
+                      {task.scheduledDate.toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.taskDuration}>
+                      {task.estimatedDuration}h
+                    </Text>
+                  </View>
+                  {task.status === 'completed' && (
+                    <View style={styles.completedIndicator}>
+                      <CheckCircle size={16} color={colors.success} />
+                      <Text style={styles.completedText}>{translate('Completed')}</Text>
+                    </View>
+                  )}
+                </View>
+              ))
+          )}
+          {state.tasks.length > 10 && (
+            <TouchableOpacity 
+              style={styles.viewMoreButton}
+              onPress={() => setSelectedTab('tasks')}
+            >
+              <Text style={styles.viewMoreText}>
+                {translate('View All')} ({state.tasks.length} {translate('total')})
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* All Crops History */}
+        <View style={styles.historySubSection}>
+          <Text style={styles.historySubTitle}>{translate('All Crops History')}</Text>
+          {state.crops.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Activity size={32} color={colors.textSecondary} />
+              <Text style={styles.emptyStateText}>{translate('No crops in history')}</Text>
+            </View>
+          ) : (
+            state.crops
+              .sort((a, b) => new Date(b.plantingDate).getTime() - new Date(a.plantingDate).getTime())
+              .slice(0, 10)
+              .map((crop) => (
+                <View key={crop.id} style={[styles.cropCard, styles.historyCard]}>
+                  <View style={styles.cropHeader}>
+                    <Text style={styles.cropName}>{crop.cropName}</Text>
+                    {crop.variety && <Text style={styles.cropVariety}>({crop.variety})</Text>}
+                    <View style={[styles.statusBadge, { backgroundColor: getStatusColor(crop.status) }]}>
+                      <Text style={styles.statusText}>{crop.status}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.cropLocation}>{crop.fieldLocation}</Text>
+                  <Text style={styles.cropSize}>{crop.fieldSize} acres</Text>
+                  <View style={styles.cropFooter}>
+                    <Text style={styles.cropDate}>
+                      Planted: {crop.plantingDate.toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.cropDate}>
+                      Harvest: {crop.harvestDate.toLocaleDateString()}
+                    </Text>
+                  </View>
+                  {crop.notes && (
+                    <Text style={styles.cropNotes}>{crop.notes}</Text>
+                  )}
+                </View>
+              ))
+          )}
+          {state.crops.length > 10 && (
+            <TouchableOpacity 
+              style={styles.viewMoreButton}
+              onPress={() => setSelectedTab('crops')}
+            >
+              <Text style={styles.viewMoreText}>
+                {translate('View All')} ({state.crops.length} {translate('total')})
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* All Activities History */}
+        <View style={styles.historySubSection}>
+          <Text style={styles.historySubTitle}>{translate('All Activities History')}</Text>
+          {state.activities.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Activity size={32} color={colors.textSecondary} />
+              <Text style={styles.emptyStateText}>{translate('No activities in history')}</Text>
+            </View>
+          ) : (
+            state.activities
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .slice(0, 15)
+              .map((activity) => (
+                <View key={activity.id} style={[styles.activityCard, styles.historyCard]}>
+                  <View style={styles.activityHeader}>
+                    <Text style={styles.activityType}>{activity.activityType}</Text>
+                    <Text style={styles.activityDate}>
+                      {activity.date.toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Text style={styles.activityDescription}>{activity.description}</Text>
+                  {activity.cropName && (
+                    <Text style={styles.activityCrop}>Crop: {activity.cropName}</Text>
+                  )}
+                </View>
+              ))
+          )}
+          {state.activities.length > 15 && (
+            <TouchableOpacity style={styles.viewMoreButton}>
+              <Text style={styles.viewMoreText}>
+                {translate('View All')} ({state.activities.length} {translate('total')})
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
     </ScrollView>
   );
 
   const renderTasksTab = () => (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView 
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{translate('All Tasks')}</Text>
           <TouchableOpacity 
             style={styles.addButton}
-            onPress={() => {
-              Alert.alert('Add Task', 'Task creation screen would open here');
-            }}
+            onPress={() => router.push('/scheduling/add-task' as any)}
           >
             <Plus size={20} color={colors.white} />
           </TouchableOpacity>
@@ -259,8 +550,17 @@ export default function SchedulingScreen() {
                         { text: 'Cancel', style: 'cancel' },
                         { 
                           text: 'Complete', 
-                          onPress: () => {
-                            Alert.alert('Success', 'Task marked as completed');
+                          onPress: async () => {
+                            try {
+                              // Update task status to completed
+                              await updateTask(task.id, { status: 'completed' });
+                              Alert.alert('Success', 'Task marked as completed');
+                              // Refresh dashboard to show updated data
+                              await refreshDashboard();
+                            } catch (error) {
+                              console.error('Error completing task:', error);
+                              Alert.alert('Error', 'Failed to complete task');
+                            }
                           }
                         }
                       ]
@@ -278,15 +578,18 @@ export default function SchedulingScreen() {
   );
 
   const renderCropsTab = () => (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView 
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>{translate('All Crops')}</Text>
           <TouchableOpacity 
             style={styles.addButton}
-            onPress={() => {
-              Alert.alert('Add Crop', 'Crop scheduling screen would open here');
-            }}
+            onPress={() => router.push('/scheduling/add-crop' as any)}
           >
             <Plus size={20} color={colors.white} />
           </TouchableOpacity>
@@ -327,13 +630,26 @@ export default function SchedulingScreen() {
   );
 
   const renderCalendarTab = () => (
-    <ScrollView style={styles.tabContent}>
+    <ScrollView 
+      style={styles.tabContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
+    >
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>{translate('Calendar View')}</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{translate('Calendar View')}</Text>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => router.push('/scheduling/calendar' as any)}
+          >
+            <Calendar size={20} color={colors.white} />
+          </TouchableOpacity>
+        </View>
         <View style={styles.emptyState}>
           <Calendar size={48} color={colors.textSecondary} />
           <Text style={styles.emptyStateText}>
-            {translate('Calendar view coming soon')}
+            {translate('Tap the calendar icon to view full calendar')}
           </Text>
         </View>
       </View>
@@ -706,5 +1022,78 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  historyStatsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  historyStatCard: {
+    flex: 1,
+    minWidth: '22%',
+    backgroundColor: colors.white,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  historyStatNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginTop: 4,
+  },
+  historyStatLabel: {
+    fontSize: 10,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  historySubSection: {
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  historySubTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 12,
+  },
+  historyCard: {
+    opacity: 0.9,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.border,
+  },
+  completedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  completedText: {
+    fontSize: 12,
+    color: colors.success,
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  viewMoreButton: {
+    backgroundColor: colors.lightBackground,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  viewMoreText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
   },
 });

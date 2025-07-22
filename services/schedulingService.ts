@@ -40,17 +40,38 @@ class SchedulingService {
     CROP_TEMPLATES: 'cropCalendarTemplates'
   };
 
+  // Helper function to clean data before sending to Firebase
+  private cleanFirebaseData(data: any): any {
+    console.log('Cleaning Firebase data - Original:', data);
+    const cleaned: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined && value !== null && value !== '') {
+        cleaned[key] = value;
+      } else {
+        console.log(`Filtering out field "${key}" with value:`, value);
+      }
+    }
+    console.log('Cleaning Firebase data - Cleaned:', cleaned);
+    return cleaned;
+  }
+
   // Crop Schedule Management
   async createCropSchedule(cropSchedule: Omit<CropSchedule, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const now = new Date();
-      const docRef = await addDoc(collection(db, this.COLLECTIONS.CROP_SCHEDULES), {
-        ...cropSchedule,
+      
+      // Clean the crop data to remove undefined values
+      const cleanedCrop = this.cleanFirebaseData(cropSchedule);
+      
+      const cropData = {
+        ...cleanedCrop,
         plantingDate: Timestamp.fromDate(cropSchedule.plantingDate),
         harvestDate: Timestamp.fromDate(cropSchedule.harvestDate),
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now)
-      });
+      };
+
+      const docRef = await addDoc(collection(db, this.COLLECTIONS.CROP_SCHEDULES), cropData);
 
       // Auto-create maintenance reminders based on crop template
       await this.createMaintenanceRemindersForCrop(docRef.id, cropSchedule);
@@ -155,13 +176,19 @@ class SchedulingService {
   async createMaintenanceTask(task: Omit<MaintenanceTask, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
       const now = new Date();
-      const docRef = await addDoc(collection(db, this.COLLECTIONS.MAINTENANCE_TASKS), {
-        ...task,
+      
+      // Clean the task data to remove undefined values
+      const cleanedTask = this.cleanFirebaseData(task);
+      
+      const taskData = {
+        ...cleanedTask,
         scheduledDate: Timestamp.fromDate(task.scheduledDate),
         completedDate: task.completedDate ? Timestamp.fromDate(task.completedDate) : null,
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now)
-      });
+      };
+
+      const docRef = await addDoc(collection(db, this.COLLECTIONS.MAINTENANCE_TASKS), taskData);
 
       // Create reminder for this task
       await this.createReminderForTask(docRef.id, task);

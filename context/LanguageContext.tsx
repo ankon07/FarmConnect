@@ -258,16 +258,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getStaticTranslation = (key: string): string => {
     const translation = staticTranslations[key];
-    if (translation) {
+    if (translation && translation[currentLanguage]) {
       return translation[currentLanguage];
     }
-    return key; // Return key if no translation found
+    return key || ''; // Return key if no translation found, ensure it's a string
   };
 
   const translate = async (text: string): Promise<string> => {
     // If current language is English, return original text
     if (currentLanguage === 'en') {
-      return text;
+      return text || '';
     }
 
     // Check cache first
@@ -291,13 +291,13 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       // Cache the translation
       setTranslationCache(prev => ({
         ...prev,
-        [cacheKey]: translatedText
+        [cacheKey]: translatedText || text || ''
       }));
       
-      return translatedText;
+      return translatedText || text || '';
     } catch (error) {
       console.error("Translation failed:", error);
-      return text; // Return original text if translation fails
+      return text || ''; // Return original text if translation fails
     } finally {
       setIsTranslating(false);
     }

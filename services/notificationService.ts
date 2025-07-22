@@ -1,7 +1,8 @@
 import * as Notifications from 'expo-notifications';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import schedulingService from './schedulingService';
 import { Reminder, MaintenanceTask } from '../types/scheduling';
+import Constants from 'expo-constants';
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -16,10 +17,21 @@ Notifications.setNotificationHandler({
 
 class NotificationService {
   private notificationIds: Map<string, string> = new Map();
+  private isExpoGo: boolean = false;
+  private fallbackReminders: Map<string, Reminder> = new Map();
 
   async initialize(): Promise<void> {
     try {
-      // Request permissions
+      // Check if running in Expo Go
+      this.isExpoGo = Constants.appOwnership === 'expo';
+      
+      if (this.isExpoGo) {
+        console.warn('Running in Expo Go - Push notifications are limited. Using fallback notification system.');
+        this.initializeFallbackSystem();
+        return;
+      }
+
+      // Request permissions for development builds
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
@@ -29,11 +41,12 @@ class NotificationService {
       }
 
       if (finalStatus !== 'granted') {
-        console.warn('Notification permissions not granted');
+        console.warn('Notification permissions not granted - using fallback system');
+        this.initializeFallbackSystem();
         return;
       }
 
-      // Configure notification channel for Android
+      // Configure notification channel for Android (development builds only)
       if (Platform.OS === 'android') {
         await Notifications.setNotificationChannelAsync('farming-reminders', {
           name: 'Farming Reminders',
@@ -60,11 +73,59 @@ class NotificationService {
       console.log('Notification service initialized successfully');
     } catch (error) {
       console.error('Error initializing notification service:', error);
+      this.initializeFallbackSystem();
+    }
+  }
+
+  private initializeFallbackSystem(): void {
+    console.log('Initializing fallback notification system');
+    // Set up periodic check for due reminders
+    setInterval(() => {
+      this.checkFallbackReminders();
+    }, 60000); // Check every minute
+  }
+
+  private async checkFallbackReminders(): Promise<void> {
+    try {
+      const now = new Date();
+      for (const [id, reminder] of this.fallbackReminders) {
+        if (reminder.scheduledDate <= now && !reminder.isSent) {
+          // Show alert instead of push notification
+          Alert.alert(
+            reminder.title,
+            reminder.message,
+            [{ text: 'OK', onPress: () => this.markReminderAsSent(id) }]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error checking fallback reminders:', error);
+    }
+  }
+
+  private async markReminderAsSent(reminderId: string): Promise<void> {
+    try {
+      const reminder = this.fallbackReminders.get(reminderId);
+      if (reminder) {
+        reminder.isSent = true;
+        this.fallbackReminders.set(reminderId, reminder);
+        await schedulingService.markReminderAsSent(reminderId);
+      }
+    } catch (error) {
+      console.error('Error marking reminder as sent:', error);
     }
   }
 
   async scheduleReminder(reminder: Reminder): Promise<string | null> {
     try {
+      if (this.isExpoGo) {
+        // Use fallback system for Expo Go
+        this.fallbackReminders.set(reminder.id, reminder);
+        console.log(`Scheduled fallback reminder: ${reminder.title}`);
+        return reminder.id;
+      }
+
+      // Use native notifications for development builds
       const notificationId = await Notifications.scheduleNotificationAsync({
         content: {
           title: reminder.title,
@@ -85,7 +146,9 @@ class NotificationService {
       return notificationId;
     } catch (error) {
       console.error('Error scheduling reminder notification:', error);
-      return null;
+      // Fallback to in-memory system if native notifications fail
+      this.fallbackReminders.set(reminder.id, reminder);
+      return reminder.id;
     }
   }
 

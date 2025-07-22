@@ -14,11 +14,11 @@ const TranslatedText: React.FC<TranslatedTextProps> = ({
   style, 
   ...textProps 
 }) => {
-  const { translatedText, isLoading } = useTranslatedText(text);
+  const { translatedText, isLoading } = useTranslatedText(text || '');
 
   return (
     <Text style={style} {...textProps}>
-      {isLoading ? (fallback || text) : translatedText}
+      {isLoading ? (fallback || text || '') : (translatedText || '')}
     </Text>
   );
 };

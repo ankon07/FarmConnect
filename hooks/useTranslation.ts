@@ -6,10 +6,10 @@ export const useTranslation = () => {
 
   const t = (key: string, fallback?: string): string => {
     const translation = getStaticTranslation(key);
-    if (translation && translation !== key) {
+    if (translation && translation !== key && typeof translation === 'string') {
       return translation;
     }
-    return fallback || key;
+    return fallback || key || '';
   };
 
   const tAsync = async (text: string): Promise<string> => {
@@ -27,23 +27,23 @@ export const useTranslation = () => {
 // Hook for translating text with state management
 export const useTranslatedText = (text: string) => {
   const { translate, currentLanguage } = useLanguage();
-  const [translatedText, setTranslatedText] = useState(text);
+  const [translatedText, setTranslatedText] = useState(text || '');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const translateText = async () => {
       if (currentLanguage === 'en') {
-        setTranslatedText(text);
+        setTranslatedText(text || '');
         return;
       }
 
       setIsLoading(true);
       try {
         const translated = await translate(text);
-        setTranslatedText(translated);
+        setTranslatedText(translated || text || '');
       } catch (error) {
         console.error('Translation error:', error);
-        setTranslatedText(text);
+        setTranslatedText(text || '');
       } finally {
         setIsLoading(false);
       }
@@ -52,5 +52,5 @@ export const useTranslatedText = (text: string) => {
     translateText();
   }, [text, currentLanguage, translate]);
 
-  return { translatedText, isLoading };
+  return { translatedText: translatedText || '', isLoading };
 };
