@@ -14,6 +14,7 @@ import { COLORS } from '@/constants/colors';
 import { Machinery, RentalFormData } from '@/types/machinery';
 import { createRental } from '@/services/machineryService';
 import { useUser } from '@/context/UserContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MachineryRentalFormProps {
   machinery: Machinery;
@@ -23,6 +24,7 @@ interface MachineryRentalFormProps {
 
 export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: MachineryRentalFormProps) {
   const { user } = useUser();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState<RentalFormData>({
@@ -65,13 +67,13 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
   const handleSubmit = async () => {
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to rent machinery');
+      Alert.alert(t('error'), t('please-login-rent'));
       return;
     }
 
     // Validate required fields
     if (!formData.startDate || !formData.endDate || !formData.startTime || !formData.endTime) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      Alert.alert(t('error'), t('fill-required-fields'));
       return;
     }
 
@@ -81,41 +83,41 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
     const now = new Date();
 
     if (startDateTime < now) {
-      Alert.alert('Error', 'Start date and time cannot be in the past');
+      Alert.alert(t('error'), t('start-date-past'));
       return;
     }
 
     if (endDateTime <= startDateTime) {
-      Alert.alert('Error', 'End date and time must be after start date and time');
+      Alert.alert(t('error'), t('end-date-after'));
       return;
     }
 
     if (formData.requiresDelivery && !formData.deliveryAddress) {
-      Alert.alert('Error', 'Please provide delivery address');
+      Alert.alert(t('error'), t('provide-delivery-address'));
       return;
     }
 
     // Validate payment information
     if (formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') {
       if (!formData.paymentInfo.phoneNumber) {
-        Alert.alert('Error', 'Please provide mobile number for payment');
+        Alert.alert(t('error'), t('provide-mobile-payment'));
         return;
       }
     }
 
     if (formData.paymentMethod === 'bank_transfer' && !formData.paymentInfo.accountNumber) {
-      Alert.alert('Error', 'Please provide bank account number');
+      Alert.alert(t('error'), t('provide-bank-account'));
       return;
     }
 
     setLoading(true);
     try {
       await createRental(machinery.id, user.id, formData, user.name);
-      Alert.alert('Success', 'Rental request submitted successfully! The owner will be notified.');
+      Alert.alert(t('success'), t('rental-request-success'));
       onSuccess();
     } catch (error) {
       console.error('Error creating rental:', error);
-      Alert.alert('Error', 'Failed to submit rental request. Please try again.');
+      Alert.alert(t('error'), t('failed-submit-rental'));
     } finally {
       setLoading(false);
     }
@@ -125,13 +127,13 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      <Text style={styles.title}>Rent {machinery.name}</Text>
+      <Text style={styles.title}>{t('rent')} {machinery.name}</Text>
       
       <View style={styles.machineryInfo}>
         <Text style={styles.machineryName}>{machinery.name}</Text>
-        <Text style={styles.machineryDetails}>Owner: {machinery.ownerName}</Text>
-        <Text style={styles.machineryDetails}>Contact: {machinery.ownerContact}</Text>
-        <Text style={styles.machineryDetails}>Location: {machinery.location.address}</Text>
+        <Text style={styles.machineryDetails}>{t('owner')}: {machinery.ownerName}</Text>
+        <Text style={styles.machineryDetails}>{t('contact')}: {machinery.ownerContact}</Text>
+        <Text style={styles.machineryDetails}>{t('location')}: {machinery.location.address}</Text>
         <View style={styles.priceContainer}>
           <Text style={styles.priceText}>৳{machinery.pricePerHour}/hour</Text>
           <Text style={styles.priceText}>৳{machinery.pricePerDay}/day</Text>
@@ -139,9 +141,9 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Rental Period</Text>
+        <Text style={styles.sectionTitle}>{t('rental-period')}</Text>
         
-        <Text style={styles.label}>Start Date *</Text>
+        <Text style={styles.label}>{t('start-date')} *</Text>
         <TextInput
           style={styles.input}
           value={formData.startDate}
@@ -149,7 +151,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
           placeholder="YYYY-MM-DD"
         />
 
-        <Text style={styles.label}>Start Time *</Text>
+        <Text style={styles.label}>{t('start-time')} *</Text>
         <TextInput
           style={styles.input}
           value={formData.startTime}
@@ -157,7 +159,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
           placeholder="HH:MM (24-hour format)"
         />
 
-        <Text style={styles.label}>End Date *</Text>
+        <Text style={styles.label}>{t('end-date')} *</Text>
         <TextInput
           style={styles.input}
           value={formData.endDate}
@@ -165,7 +167,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
           placeholder="YYYY-MM-DD"
         />
 
-        <Text style={styles.label}>End Time *</Text>
+        <Text style={styles.label}>{t('end-time')} *</Text>
         <TextInput
           style={styles.input}
           value={formData.endTime}
@@ -175,10 +177,10 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Delivery Options</Text>
+        <Text style={styles.sectionTitle}>{t('delivery-options')}</Text>
         
         <View style={styles.switchContainer}>
-          <Text style={styles.switchLabel}>Require Delivery</Text>
+          <Text style={styles.switchLabel}>{t('require-delivery')}</Text>
           <Switch
             value={formData.requiresDelivery}
             onValueChange={(value) => setFormData({ ...formData, requiresDelivery: value })}
@@ -189,22 +191,22 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
         {formData.requiresDelivery && (
           <>
-            <Text style={styles.label}>Delivery Address *</Text>
+            <Text style={styles.label}>{t('delivery-address')} *</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
               value={formData.deliveryAddress}
               onChangeText={(text) => setFormData({ ...formData, deliveryAddress: text })}
-              placeholder="Enter your delivery address"
+              placeholder={t('enter-delivery-address')}
               multiline
               numberOfLines={3}
             />
-            <Text style={styles.deliveryNote}>Delivery fee: ৳500</Text>
+            <Text style={styles.deliveryNote}>{t('delivery-fee')}</Text>
           </>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Payment Method</Text>
+        <Text style={styles.sectionTitle}>{t('payment-method')}</Text>
         
         <View style={styles.paymentMethodContainer}>
           {['bkash', 'nagad', 'rocket', 'bank_transfer', 'cash'].map((method) => (
@@ -228,11 +230,11 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
                 styles.paymentMethodText,
                 formData.paymentMethod === method && styles.selectedPaymentMethodText
               ]}>
-                {method === 'bkash' ? 'bKash' :
-                 method === 'nagad' ? 'Nagad' :
-                 method === 'rocket' ? 'Rocket' :
-                 method === 'bank_transfer' ? 'Bank Transfer' :
-                 'Cash on Delivery'}
+                {method === 'bkash' ? t('bkash') :
+                 method === 'nagad' ? t('nagad') :
+                 method === 'rocket' ? t('rocket') :
+                 method === 'bank_transfer' ? t('bank-transfer') :
+                 t('cash-on-delivery')}
               </Text>
             </TouchableOpacity>
           ))}
@@ -240,7 +242,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
         {(formData.paymentMethod === 'bkash' || formData.paymentMethod === 'nagad' || formData.paymentMethod === 'rocket') && (
           <>
-            <Text style={styles.label}>Mobile Number *</Text>
+            <Text style={styles.label}>{t('mobile-number')} *</Text>
             <TextInput
               style={styles.input}
               value={formData.paymentInfo.phoneNumber || ''}
@@ -256,7 +258,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
         {formData.paymentMethod === 'bank_transfer' && (
           <>
-            <Text style={styles.label}>Account Number *</Text>
+            <Text style={styles.label}>{t('account-number')} *</Text>
             <TextInput
               style={styles.input}
               value={formData.paymentInfo.accountNumber || ''}
@@ -264,7 +266,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
                 ...formData, 
                 paymentInfo: { ...formData.paymentInfo, accountNumber: text }
               })}
-              placeholder="Enter bank account number"
+              placeholder={t('enter-bank-account')}
               keyboardType="numeric"
             />
           </>
@@ -272,19 +274,19 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
         {formData.paymentMethod === 'cash' && (
           <Text style={styles.paymentNote}>
-            Payment will be made in cash upon delivery/pickup of the machinery.
+            {t('cash-payment-note')}
           </Text>
         )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Additional Notes</Text>
+        <Text style={styles.sectionTitle}>{t('additional-notes')}</Text>
         
         <TextInput
           style={[styles.input, styles.textArea]}
           value={formData.notes}
           onChangeText={(text) => setFormData({ ...formData, notes: text })}
-          placeholder="Any special requirements or notes for the owner"
+          placeholder={t('special-requirements')}
           multiline
           numberOfLines={4}
         />
@@ -292,15 +294,15 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
       {cost.totalAmount > 0 && (
         <View style={styles.costSummary}>
-          <Text style={styles.costTitle}>Cost Summary</Text>
+          <Text style={styles.costTitle}>{t('cost-summary')}</Text>
           <View style={styles.costRow}>
-            <Text style={styles.costLabel}>Duration:</Text>
+            <Text style={styles.costLabel}>{t('duration')}:</Text>
             <Text style={styles.costValue}>
-              {cost.totalHours} hours ({cost.totalDays} days)
+              {cost.totalHours} {t('hours')} ({cost.totalDays} {t('days')})
             </Text>
           </View>
           <View style={styles.costRow}>
-            <Text style={styles.costLabel}>Rental Cost:</Text>
+            <Text style={styles.costLabel}>{t('rental-cost')}:</Text>
             <Text style={styles.costValue}>৳{cost.totalAmount}</Text>
           </View>
           {formData.requiresDelivery && (
@@ -310,7 +312,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
             </View>
           )}
           <View style={[styles.costRow, styles.totalRow]}>
-            <Text style={styles.totalLabel}>Total Amount:</Text>
+            <Text style={styles.totalLabel}>{t('total-amount')}:</Text>
             <Text style={styles.totalValue}>৳{cost.totalAmount + cost.deliveryFee}</Text>
           </View>
         </View>
@@ -318,7 +320,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
+          <Text style={styles.cancelButtonText}>{t('cancel')}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -329,7 +331,7 @@ export default function MachineryRentalForm({ machinery, onSuccess, onCancel }: 
           {loading ? (
             <ActivityIndicator color={COLORS.white} />
           ) : (
-            <Text style={styles.submitButtonText}>Submit Request</Text>
+            <Text style={styles.submitButtonText}>{t('submit-request')}</Text>
           )}
         </TouchableOpacity>
       </View>

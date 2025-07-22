@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { bamisScrapingService, WeatherForecast, WeatherCaution, BamisData } from '../../services/bamisScrapingService';
-import { dailySchedulerService } from '../../services/dailySchedulerService';
 import { COLORS } from '../../constants/colors';
 
 interface BamisWeatherWidgetProps {
@@ -17,7 +16,6 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
   const [bamisData, setBamisData] = useState<BamisData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     loadBamisData();
@@ -28,10 +26,8 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
       setLoading(true);
       const data = await bamisScrapingService.getLatestData();
       setBamisData(data);
-      setLastUpdated(data?.lastScraped || null);
     } catch (error) {
       console.error('Error loading BAMIS data:', error);
-      Alert.alert('ত্রুটি', 'আবহাওয়া তথ্য লোড করতে সমস্যা হয়েছে');
     } finally {
       setLoading(false);
     }
@@ -42,34 +38,10 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
       setRefreshing(true);
       const data = await bamisScrapingService.forceRefresh();
       setBamisData(data);
-      setLastUpdated(data?.lastScraped || null);
     } catch (error) {
       console.error('Error refreshing BAMIS data:', error);
-      Alert.alert('ত্রুটি', 'আবহাওয়া তথ্য আপডেট করতে সমস্যা হয়েছে');
     } finally {
       setRefreshing(false);
-    }
-  };
-
-  const handleForceRunScheduler = async () => {
-    try {
-      Alert.alert(
-        'স্ক্র্যাপিং শুরু করুন',
-        'আপনি কি এখনই BAMIS ডেটা স্ক্র্যাপিং শুরু করতে চান?',
-        [
-          { text: 'বাতিল', style: 'cancel' },
-          {
-            text: 'শুরু করুন',
-            onPress: async () => {
-              await dailySchedulerService.forceRunTask('bamis_morning_scrape');
-              setTimeout(() => loadBamisData(), 2000); // Reload after 2 seconds
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Error running scheduler:', error);
-      Alert.alert('ত্রুটি', 'স্ক্র্যাপিং শুরু করতে সমস্যা হয়েছে');
     }
   };
 
@@ -80,31 +52,6 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
       case 'medium': return '#FF9800';
       case 'low': return '#4CAF50';
       default: return COLORS.primary;
-    }
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'warning';
-      case 'high': return 'alert-circle';
-      case 'medium': return 'information-circle';
-      case 'low': return 'checkmark-circle';
-      default: return 'information-circle';
-    }
-  };
-
-  const formatLastUpdated = (date: Date | null) => {
-    if (!date) return 'কখনো আপডেট হয়নি';
-    
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (diffHours > 0) {
-      return `${diffHours} ঘন্টা ${diffMinutes} মিনিট আগে`;
-    } else {
-      return `${diffMinutes} মিনিট আগে`;
     }
   };
 
@@ -130,11 +77,11 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Ionicons name="cloud" size={24} color={COLORS.primary} />
-          <Text style={styles.title}>BAMIS আবহাওয়া তথ্য</Text>
+          <Ionicons name="cloud" size={20} color={COLORS.primary} />
+          <Text style={styles.title}>BAMIS Weather</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>তথ্য লোড হচ্ছে...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
       </View>
     );
@@ -144,14 +91,13 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Ionicons name="cloud" size={24} color={COLORS.primary} />
-          <Text style={styles.title}>BAMIS আবহাওয়া তথ্য</Text>
+          <Ionicons name="cloud" size={20} color={COLORS.primary} />
+          <Text style={styles.title}>BAMIS Weather</Text>
         </View>
         <View style={styles.errorContainer}>
-          <Ionicons name="cloud-offline" size={48} color="#999" />
-          <Text style={styles.errorText}>আবহাওয়া তথ্য পাওয়া যায়নি</Text>
+          <Text style={styles.errorText}>No weather data available</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadBamisData}>
-            <Text style={styles.retryButtonText}>পুনরায় চেষ্টা করুন</Text>
+            <Text style={styles.retryButtonText}>Retry</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -161,322 +107,235 @@ export const BamisWeatherWidget: React.FC<BamisWeatherWidgetProps> = ({
   const displayData = filterDataByRegion(bamisData);
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
-      {/* Header */}
+    <View style={styles.container}>
+      {/* Compact Header */}
       <View style={styles.header}>
-        <Ionicons name="cloud" size={24} color={COLORS.primary} />
-        <Text style={styles.title}>BAMIS আবহাওয়া তথ্য</Text>
-        <TouchableOpacity onPress={handleForceRunScheduler} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={20} color={COLORS.primary} />
+        <Ionicons name="cloud" size={18} color={COLORS.primary} />
+        <Text style={styles.title}>BAMIS Weather</Text>
+        <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+          <Ionicons name="refresh" size={16} color={COLORS.primary} />
         </TouchableOpacity>
       </View>
 
-      {/* Last Updated */}
-      <View style={styles.lastUpdatedContainer}>
-        <Text style={styles.lastUpdatedText}>
-          শেষ আপডেট: {formatLastUpdated(lastUpdated)}
-        </Text>
-        <Text style={styles.bulletinDate}>বুলেটিন: {bamisData.bulletinDate}</Text>
-      </View>
-
-      {/* Weather Forecasts */}
-      {displayData.forecasts.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>আবহাওয়া পূর্বাভাস</Text>
-          {displayData.forecasts.slice(0, 3).map((forecast) => (
-            <View key={forecast.id} style={styles.forecastCard}>
-              <View style={styles.forecastHeader}>
-                <Text style={styles.forecastDate}>{forecast.date}</Text>
-                <Text style={styles.forecastPeriod}>{forecast.period}</Text>
-              </View>
-              <View style={styles.forecastContent}>
-                <View style={styles.temperatureContainer}>
-                  <Ionicons name="thermometer" size={16} color="#FF5722" />
-                  <Text style={styles.temperature}>
-                    {forecast.temperature.min}° - {forecast.temperature.max}°সে
-                  </Text>
-                </View>
-                <View style={styles.weatherDetail}>
-                  <Ionicons name="water" size={16} color="#2196F3" />
-                  <Text style={styles.weatherDetailText}>আর্দ্রতা: {forecast.humidity}%</Text>
-                </View>
-                <View style={styles.weatherDetail}>
-                  <Ionicons name="rainy" size={16} color="#4CAF50" />
-                  <Text style={styles.weatherDetailText}>বৃষ্টি: {forecast.rainfall}</Text>
-                </View>
-                <Text style={styles.forecastDescription}>{forecast.description}</Text>
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {/* Latest Forecast */}
+        {displayData.forecasts.length > 0 && (
+          <View style={styles.forecastCard}>
+            <View style={styles.forecastHeader}>
+              <Text style={styles.forecastDate}>{displayData.forecasts[0].date}</Text>
+              <View style={styles.temperatureContainer}>
+                <Ionicons name="thermometer" size={14} color="#FF5722" />
+                <Text style={styles.temperature}>
+                  {displayData.forecasts[0].temperature.min}°-{displayData.forecasts[0].temperature.max}°C
+                </Text>
               </View>
             </View>
-          ))}
-        </View>
-      )}
+            <Text style={styles.forecastDescription} numberOfLines={2}>
+              {displayData.forecasts[0].description}
+            </Text>
+            <View style={styles.weatherDetails}>
+              <View style={styles.weatherDetail}>
+                <Ionicons name="water" size={12} color="#2196F3" />
+                <Text style={styles.weatherDetailText}>{displayData.forecasts[0].humidity}%</Text>
+              </View>
+              <View style={styles.weatherDetail}>
+                <Ionicons name="rainy" size={12} color="#4CAF50" />
+                <Text style={styles.weatherDetailText}>{displayData.forecasts[0].rainfall}</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
-      {/* Weather Cautions */}
-      {displayData.cautions.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>সতর্কতা ও পরামর্শ</Text>
-          {displayData.cautions.map((caution) => (
-            <TouchableOpacity
-              key={caution.id}
-              style={[
-                styles.cautionCard,
-                { borderLeftColor: getSeverityColor(caution.severity) }
-              ]}
-              onPress={() => onNotificationPress?.(caution)}
-            >
-              <View style={styles.cautionHeader}>
-                <Ionicons
-                  name={getSeverityIcon(caution.severity) as any}
-                  size={20}
-                  color={getSeverityColor(caution.severity)}
-                />
-                <Text style={styles.cautionTitle}>{caution.title}</Text>
-                <View style={[
-                  styles.severityBadge,
-                  { backgroundColor: getSeverityColor(caution.severity) }
-                ]}>
-                  <Text style={styles.severityText}>
-                    {caution.severity === 'critical' ? 'জরুরি' :
-                     caution.severity === 'high' ? 'উচ্চ' :
-                     caution.severity === 'medium' ? 'মাঝারি' : 'নিম্ন'}
+        {/* Critical Cautions */}
+        {displayData.cautions.length > 0 && (
+          <View style={styles.cautionsSection}>
+            <Text style={styles.sectionTitle}>Alerts ({displayData.cautions.length})</Text>
+            {displayData.cautions.slice(0, 2).map((caution) => (
+              <TouchableOpacity
+                key={caution.id}
+                style={[
+                  styles.cautionCard,
+                  { borderLeftColor: getSeverityColor(caution.severity) }
+                ]}
+                onPress={() => onNotificationPress?.(caution)}
+              >
+                <View style={styles.cautionHeader}>
+                  <Ionicons
+                    name="warning"
+                    size={14}
+                    color={getSeverityColor(caution.severity)}
+                  />
+                  <Text style={styles.cautionTitle} numberOfLines={1}>
+                    {caution.title}
                   </Text>
                 </View>
-              </View>
-              <Text style={styles.cautionDescription} numberOfLines={3}>
-                {caution.description}
-              </Text>
-              <View style={styles.cautionFooter}>
-                <Text style={styles.cautionCategory}>
-                  {caution.category === 'weather' ? 'আবহাওয়া' :
-                   caution.category === 'crop' ? 'ফসল' :
-                   caution.category === 'livestock' ? 'পশুপাখি' :
-                   caution.category === 'fisheries' ? 'মৎস্য' : 'সাধারণ'}
+                <Text style={styles.cautionDescription} numberOfLines={2}>
+                  {caution.description}
                 </Text>
-                <Text style={styles.cautionRegion}>{caution.region}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
-      {/* Empty State */}
-      {displayData.forecasts.length === 0 && displayData.cautions.length === 0 && (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="cloud-outline" size={48} color="#999" />
-          <Text style={styles.emptyText}>
-            {userRegion ? `${userRegion} অঞ্চলের জন্য কোন তথ্য পাওয়া যায়নি` : 'কোন আবহাওয়া তথ্য পাওয়া যায়নি'}
-          </Text>
-        </View>
-      )}
-    </ScrollView>
+        {/* Empty State */}
+        {displayData.forecasts.length === 0 && displayData.cautions.length === 0 && (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="cloud-outline" size={32} color="#999" />
+            <Text style={styles.emptyText}>
+              No weather data available for {userRegion || 'your region'}
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: COLORS.white,
+    padding: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    marginBottom: 8,
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginLeft: 8,
-    flex: 1,
-    color: '#333',
-  },
-  refreshButton: {
-    padding: 8,
-  },
-  lastUpdatedContainer: {
-    padding: 12,
-    backgroundColor: 'white',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  lastUpdatedText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  bulletinDate: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  section: {
-    marginTop: 16,
-  },
-  sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
-    marginHorizontal: 16,
-    color: '#333',
+    marginLeft: 6,
+    flex: 1,
+    color: COLORS.textPrimary,
+  },
+  refreshButton: {
+    padding: 4,
+  },
+  content: {
+    maxHeight: 140,
   },
   forecastCard: {
-    backgroundColor: 'white',
-    marginHorizontal: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 6,
+    padding: 8,
     marginBottom: 8,
-    borderRadius: 8,
-    padding: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
   },
   forecastHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 4,
   },
   forecastDate: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  forecastPeriod: {
     fontSize: 12,
-    color: '#666',
-  },
-  forecastContent: {
-    gap: 8,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
   },
   temperatureContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
   temperature: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#FF5722',
+  },
+  forecastDescription: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+    lineHeight: 14,
+  },
+  weatherDetails: {
+    flexDirection: 'row',
+    gap: 12,
   },
   weatherDetail: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 2,
   },
   weatherDetailText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 10,
+    color: COLORS.textSecondary,
   },
-  forecastDescription: {
-    fontSize: 14,
-    color: '#333',
-    marginTop: 4,
+  cautionsSection: {
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: COLORS.textPrimary,
   },
   cautionCard: {
-    backgroundColor: 'white',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 8,
-    padding: 16,
-    borderLeftWidth: 4,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    backgroundColor: '#fff3cd',
+    borderRadius: 4,
+    padding: 6,
+    marginBottom: 4,
+    borderLeftWidth: 3,
   },
   cautionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    gap: 4,
+    marginBottom: 2,
   },
   cautionTitle: {
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.textPrimary,
     flex: 1,
-  },
-  severityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  severityText: {
-    fontSize: 10,
-    color: 'white',
-    fontWeight: 'bold',
   },
   cautionDescription: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  cautionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cautionCategory: {
-    fontSize: 12,
-    color: COLORS.primary,
-    fontWeight: 'bold',
-  },
-  cautionRegion: {
-    fontSize: 12,
-    color: '#999',
+    fontSize: 10,
+    color: COLORS.textSecondary,
+    lineHeight: 12,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: 16,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 12,
+    color: COLORS.textSecondary,
   },
   errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: 16,
   },
   errorText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 16,
+    fontSize: 12,
+    color: COLORS.textSecondary,
     textAlign: 'center',
+    marginBottom: 8,
   },
   retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     backgroundColor: COLORS.primary,
-    borderRadius: 8,
+    borderRadius: 4,
   },
   retryButtonText: {
     color: 'white',
+    fontSize: 10,
     fontWeight: 'bold',
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: 16,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 16,
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    marginTop: 8,
     textAlign: 'center',
   },
 });

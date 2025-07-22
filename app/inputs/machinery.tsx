@@ -16,6 +16,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useUser } from "@/context/UserContext";
 import { Machinery } from "@/types/machinery";
 import { MapPin, List, LocateFixed, AlertCircle } from "lucide-react-native";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface Equipment {
   id: string;
@@ -39,8 +40,9 @@ export default function MachineryScreen() {
     error: locationError 
   } = useLocation();
   const { user } = useUser();
+  const { t } = useTranslation();
   
-  const [activeTab, setActiveTab] = useState("Browse Machinery");
+  const [activeTab, setActiveTab] = useState("browse-machinery");
   const [viewMode, setViewMode] = useState("list"); // "list" or "map"
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [availableMachinery, setAvailableMachinery] = useState<Machinery[]>([]);
@@ -53,7 +55,7 @@ export default function MachineryScreen() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    if (activeTab === "Browse Machinery") {
+    if (activeTab === "browse-machinery") {
       loadEquipment();
       loadAvailableMachinery();
     }
@@ -155,11 +157,11 @@ export default function MachineryScreen() {
     if (!hasLocationPermission) {
       const granted = await requestLocationPermission();
       if (!granted) {
-        Alert.alert(
-          'Location Permission Required',
-          'Please enable location access to use this feature.',
-          [{ text: 'OK' }]
-        );
+      Alert.alert(
+        t('location-permission-required'),
+        t('enable-location-access'),
+        [{ text: t('ok', 'OK') }]
+      );
         return;
       }
     }
@@ -173,11 +175,11 @@ export default function MachineryScreen() {
       // Try to get current location
       const currentLoc = await getCurrentLocation();
       if (!currentLoc) {
-        Alert.alert(
-          'Location Unavailable',
-          'Unable to get your current location. Please check your location settings.',
-          [{ text: 'OK' }]
-        );
+      Alert.alert(
+        t('location-unavailable'),
+        t('unable-get-location'),
+        [{ text: t('ok', 'OK') }]
+      );
       }
     }
   };
@@ -186,11 +188,11 @@ export default function MachineryScreen() {
     // Check if user is logged in
     if (!user) {
       Alert.alert(
-        'Login Required',
-        'Please log in to rent machinery',
+        t('login-required'),
+        t('please-login-rent'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Login', onPress: () => {
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('login'), onPress: () => {
             // Navigate to login - you might want to implement navigation here
             console.log('Navigate to login');
           }}
@@ -204,7 +206,7 @@ export default function MachineryScreen() {
     if (machinery) {
       // Check if user is trying to rent their own machinery
       if (machinery.ownerId === user.id) {
-        Alert.alert('Error', 'You cannot rent your own machinery');
+        Alert.alert(t('error'), t('cannot-rent-own'));
         return;
       }
       
@@ -247,14 +249,14 @@ export default function MachineryScreen() {
         setSelectedMachineryForRent(tempMachinery);
         setShowRentalForm(true);
       } else {
-        Alert.alert('Error', 'Machinery not found. Please try again.');
+        Alert.alert(t('error'), t('machinery-not-found'));
       }
     }
   };
 
   const handleAddMachinery = () => {
     if (!user) {
-      Alert.alert('Login Required', 'Please log in to add machinery');
+      Alert.alert(t('login-required'), t('please-login-add'));
       return;
     }
     setShowAddForm(true);
@@ -263,7 +265,7 @@ export default function MachineryScreen() {
   const handleAddSuccess = () => {
     setShowAddForm(false);
     setRefreshTrigger(prev => prev + 1);
-    Alert.alert('Success', 'Machinery added successfully!');
+    Alert.alert(t('success'), t('machinery-added-success'));
   };
 
   const handleRentalSuccess = () => {
@@ -410,12 +412,16 @@ export default function MachineryScreen() {
     );
   };
 
-  const tabs = ["Browse Machinery", "My Machinery", "Rental History"];
+  const tabs = [
+    { key: "browse-machinery", label: t('browse-machinery') },
+    { key: "my-machinery", label: t('my-machinery') },
+    { key: "rental-history", label: t('rental-history') }
+  ];
 
   return (
     <View style={styles.container}>
       <AppHeader 
-        title="Machinery Rental" 
+        title={t('machinery-rental')} 
         showBackButton={true}
       />
       
@@ -423,24 +429,27 @@ export default function MachineryScreen() {
         <View style={styles.permissionBanner}>
           <AlertCircle size={20} color={COLORS.warning} />
           <Text style={styles.permissionText}>
-            Location access is required for accurate distance calculations and map features.
+            {t('location-access-required')}
           </Text>
           <TouchableOpacity 
             style={styles.permissionButton} 
             onPress={requestLocationPermission}
           >
-            <Text style={styles.permissionButtonText}>Enable Location</Text>
+            <Text style={styles.permissionButtonText}>{t('enable-location')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       <TabView
-        tabs={tabs}
-        activeTab={activeTab}
-        onChangeTab={setActiveTab}
+        tabs={tabs.map(tab => tab.label)}
+        activeTab={tabs.find(tab => tab.key === activeTab)?.label || tabs[0].label}
+        onChangeTab={(tabLabel) => {
+          const tab = tabs.find(t => t.label === tabLabel);
+          if (tab) setActiveTab(tab.key);
+        }}
       />
 
-      {activeTab === "Browse Machinery" && (
+      {activeTab === "browse-machinery" && (
         <>
           <View style={styles.viewToggleContainer}>
             <TouchableOpacity
@@ -457,7 +466,7 @@ export default function MachineryScreen() {
                   viewMode === "list" && styles.activeViewToggleText,
                 ]}
               >
-                List View
+                {t('list-view')}
               </Text>
             </TouchableOpacity>
             
@@ -475,7 +484,7 @@ export default function MachineryScreen() {
                   viewMode === "map" && styles.activeViewToggleText,
                 ]}
               >
-                Map View
+                {t('map-view')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -484,14 +493,14 @@ export default function MachineryScreen() {
         </>
       )}
 
-      {activeTab === "My Machinery" && (
+      {activeTab === "my-machinery" && (
         <UserMachineryList 
           onAddNew={handleAddMachinery}
           refreshTrigger={refreshTrigger}
         />
       )}
 
-      {activeTab === "Rental History" && (
+      {activeTab === "rental-history" && (
         <RentalHistory type="renter" />
       )}
 

@@ -9,7 +9,7 @@ import { getNotificationCount } from "@/services/bamisApi";
 import { bamisScrapingService } from "@/services/bamisScrapingService";
 import AppHeader from "@/components/common/AppHeader";
 import DashboardGridButton from "@/components/common/DashboardGridButton";
-import WeatherWidget from "@/components/home/WeatherWidget";
+import SlideableWidgetContainer from "@/components/home/SlideableWidgetContainer";
 import QuickTipsBanner from "@/components/home/QuickTipsBanner";
 import { COLORS } from "@/constants/colors";
 import { Cloud, Leaf, BarChart2, ShoppingCart, Truck, Wrench, Users, User, Building2, Brain, Store } from "lucide-react-native";
@@ -104,7 +104,7 @@ export default function HomeScreen() {
           {getGreeting()}, {user?.name || t("farmer")}!
         </Text>
         
-        <WeatherWidget />
+        <SlideableWidgetContainer userRegion={location?.name} />
         
         {tips.length > 0 && <QuickTipsBanner tips={tips} />}
         

@@ -321,7 +321,7 @@ export const createTransaction = async (
       payeeId,
       amount,
       paymentMethod: rentalData.paymentMethod,
-      transactionId: rentalData.paymentInfo.transactionId,
+      ...(rentalData.paymentInfo.transactionId && { transactionId: rentalData.paymentInfo.transactionId }),
       status: rentalData.paymentMethod === 'cash' ? 'pending' : 'pending',
       description: `Payment for machinery rental - Rental ID: ${rentalId}`,
       createdAt: new Date().toISOString(),
