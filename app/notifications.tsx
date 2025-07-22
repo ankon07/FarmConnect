@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import AppHeader from "@/components/common/AppHeader";
 import { COLORS } from "@/constants/colors";
 import { getCurrentNotifications } from "@/services/bamisApi";
+import { bamisScrapingService } from "@/services/bamisScrapingService";
 import { AlertTriangle, Clock, RefreshCw, CheckCircle } from "lucide-react-native";
 
 interface Notification {
@@ -30,10 +31,80 @@ export default function NotificationsScreen() {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const data = await getCurrentNotifications();
-      setNotifications(data);
+      
+      // Prioritize scraped data over old BAMIS API
+      const scrapedData = await bamisScrapingService.getLatestData();
+      let allNotifications: Notification[] = [];
+      
+      // Convert scraped BAMIS data to notifications
+      if (scrapedData) {
+        // Add weather forecast notifications
+        if (scrapedData.forecasts.length > 0) {
+          const latestForecast = scrapedData.forecasts[0];
+          allNotifications.unshift({
+            id: `forecast_${latestForecast.id}`,
+            title: 'আজকের আবহাওয়া পূর্বাভাস',
+            message: `তাপমাত্রা: ${latestForecast.temperature.min}°-${latestForecast.temperature.max}°সে, আর্দ্রতা: ${latestForecast.humidity}%, ${latestForecast.description}`,
+            type: 'weather' as const,
+            priority: 'medium' as const,
+            timestamp: latestForecast.lastUpdated,
+            region: latestForecast.region,
+            isRead: false
+          });
+        }
+        
+        // Add caution notifications (prioritize high severity)
+        const sortedCautions = scrapedData.cautions.sort((a, b) => {
+          const severityOrder = { critical: 4, high: 3, medium: 2, low: 1 };
+          return severityOrder[b.severity] - severityOrder[a.severity];
+        });
+        
+        sortedCautions.slice(0, 5).forEach(caution => {
+          const priority = caution.severity === 'critical' || caution.severity === 'high' ? 'high' :
+                          caution.severity === 'medium' ? 'medium' : 'low';
+          
+          const type = caution.category === 'weather' ? 'weather' :
+                      caution.category === 'crop' ? 'crop' :
+                      caution.category === 'livestock' ? 'livestock' : 'urgent';
+          
+          allNotifications.unshift({
+            id: `caution_${caution.id}`,
+            title: caution.title,
+            message: caution.description,
+            type: type as 'weather' | 'crop' | 'livestock' | 'urgent',
+            priority: priority as 'high' | 'medium' | 'low',
+            timestamp: caution.issuedAt,
+            region: caution.region,
+            isRead: false
+          });
+        });
+        
+        // Add bulletin update notification
+        allNotifications.unshift({
+          id: `bulletin_${Date.now()}`,
+          title: 'BAMIS বুলেটিন আপডেট',
+          message: `নতুন কৃষি আবহাওয়া বুলেটিন প্রকাশিত হয়েছে (${scrapedData.bulletinDate})। ${scrapedData.forecasts.length}টি পূর্বাভাস এবং ${scrapedData.cautions.length}টি সতর্কতা রয়েছে।`,
+          type: 'weather' as const,
+          priority: 'medium' as const,
+          timestamp: scrapedData.lastScraped,
+          isRead: false
+        });
+      }
+      
+      // Sort by timestamp (newest first) and limit to 20 notifications
+      allNotifications.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      setNotifications(allNotifications.slice(0, 20));
+      
     } catch (error) {
       console.error('Error loading notifications:', error);
+      // Fallback to just BAMIS API notifications
+      try {
+        const fallbackData = await getCurrentNotifications();
+        setNotifications(fallbackData);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        setNotifications([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -59,6 +130,22 @@ export default function NotificationsScreen() {
     setNotifications(prev => 
       prev.map(notification => ({ ...notification, isRead: true }))
     );
+  };
+
+  const forceScrapeData = async () => {
+    try {
+      setLoading(true);
+      // Force scrape fresh data from BAMIS website
+      const freshData = await bamisScrapingService.forceRefresh();
+      if (freshData) {
+        // Reload notifications with fresh data
+        await loadNotifications();
+      }
+    } catch (error) {
+      console.error('Error force scraping data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getNotificationIcon = (type: string, priority: string) => {
@@ -109,7 +196,12 @@ export default function NotificationsScreen() {
             ]}>
               {notification.title}
             </Text>
-            {!notification.isRead && <View style={styles.unreadDot} />}
+            <View style={styles.statusIndicators}>
+              {notification.isRead && (
+                <CheckCircle size={16} color={COLORS.success} />
+              )}
+              {!notification.isRead && <View style={styles.unreadDot} />}
+            </View>
           </View>
           <Text style={styles.cardMessage}>{notification.message}</Text>
           <View style={styles.timestampRow}>
@@ -170,12 +262,18 @@ export default function NotificationsScreen() {
             </View>
           </View>
           
-          {unreadCount > 0 && (
-            <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
-              <CheckCircle size={16} color={COLORS.white} />
-              <Text style={styles.markAllButtonText}>সব পড়া হয়েছে চিহ্নিত করুন</Text>
+          <View style={styles.buttonRow}>
+            {unreadCount > 0 && (
+              <TouchableOpacity style={styles.markAllButton} onPress={markAllAsRead}>
+                <CheckCircle size={16} color={COLORS.white} />
+                <Text style={styles.markAllButtonText}>সব পড়া হয়েছে চিহ্নিত করুন</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.scrapeButton} onPress={forceScrapeData}>
+              <RefreshCw size={16} color={COLORS.white} />
+              <Text style={styles.scrapeButtonText}>নতুন ডেটা স্ক্র্যাপ করুন</Text>
             </TouchableOpacity>
-          )}
+          </View>
         </View>
 
         {loading ? (
@@ -267,6 +365,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   markAllButtonText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  scrapeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.warning,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+    minWidth: 150,
+  },
+  scrapeButtonText: {
     color: COLORS.white,
     fontSize: 14,
     fontWeight: '600',
@@ -364,12 +484,16 @@ const styles = StyleSheet.create({
   unreadTitle: {
     fontWeight: '700',
   },
+  statusIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: COLORS.primary,
-    marginLeft: 8,
   },
   cardMessage: {
     fontSize: 14,

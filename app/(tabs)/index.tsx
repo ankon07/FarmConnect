@@ -6,6 +6,7 @@ import { useLocation } from "@/context/LocationContext";
 import { useTranslation } from "@/hooks/useTranslation";
 import { fetchWeatherData, fetchQuickTips } from "@/services/api";
 import { getNotificationCount } from "@/services/bamisApi";
+import { bamisScrapingService } from "@/services/bamisScrapingService";
 import AppHeader from "@/components/common/AppHeader";
 import DashboardGridButton from "@/components/common/DashboardGridButton";
 import WeatherWidget from "@/components/home/WeatherWidget";
@@ -41,11 +42,21 @@ export default function HomeScreen() {
     try {
       const weatherData = await fetchWeatherData(location);
       const tipsData = await fetchQuickTips();
-      const notifCount = await getNotificationCount();
+      
+      // Get notification count from scraped data
+      const scrapedData = await bamisScrapingService.getLatestData();
+      let totalNotifications = 0;
+      
+      if (scrapedData) {
+        // Count bulletin update + forecasts + cautions
+        totalNotifications += 1; // bulletin update
+        if (scrapedData.forecasts.length > 0) totalNotifications += 1; // latest forecast
+        totalNotifications += Math.min(scrapedData.cautions.length, 5); // max 5 cautions
+      }
       
       setWeather(weatherData.data);
       setTips(tipsData.data);
-      setNotificationCount(notifCount);
+      setNotificationCount(totalNotifications);
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     }
@@ -133,6 +144,7 @@ export default function HomeScreen() {
             label={t("weather")}
             onPress={() => router.push("/weather")}
           />
+          
           <DashboardGridButton 
             icon={<User size={32} color={COLORS.primary} />}
             label={t("profile")}

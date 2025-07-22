@@ -7,6 +7,8 @@ import { UserProvider } from "@/context/UserContext";
 import { LocationProvider } from "@/context/LocationContext";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { SchedulingProvider } from "@/context/SchedulingContext";
+import { notificationService } from "@/services/notificationService";
+import { dailySchedulerService } from "@/services/dailySchedulerService";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -22,6 +24,7 @@ function RootLayoutNav() {
       <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="weather" options={{ headerShown: false }} />
+      <Stack.Screen name="bamis-weather" options={{ headerShown: false }} />
       <Stack.Screen name="scheduling" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
       <Stack.Screen name="+not-found" />
@@ -31,7 +34,23 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    const initializeServices = async () => {
+      try {
+        // Initialize notification service
+        await notificationService.initialize();
+        
+        // Initialize daily scheduler service
+        await dailySchedulerService.initialize();
+        
+        console.log('All services initialized successfully');
+      } catch (error) {
+        console.error('Error initializing services:', error);
+      } finally {
+        SplashScreen.hideAsync();
+      }
+    };
+
+    initializeServices();
   }, []);
 
   return (
