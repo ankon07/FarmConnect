@@ -68,6 +68,13 @@ class NotificationService {
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#2196F3',
         });
+
+        await Notifications.setNotificationChannelAsync('machinery-rental', {
+          name: 'Machinery Rental',
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: '#4CAF50',
+        });
       }
 
       console.log('Notification service initialized successfully');
@@ -220,8 +227,174 @@ class NotificationService {
         return 'task-reminders';
       case 'weather':
         return 'weather-alerts';
+      case 'machinery-rental':
+        return 'machinery-rental';
       default:
         return 'farming-reminders';
+    }
+  }
+
+  // Machinery rental specific notifications
+  async sendRentalRequestNotification(
+    ownerId: string,
+    machineryName: string,
+    renterName: string,
+    rentalId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<void> {
+    try {
+      const title = 'New Rental Request';
+      const body = `${renterName} wants to rent your ${machineryName} from ${startDate} to ${endDate}`;
+      
+      await this.sendImmediateNotification(
+        title,
+        body,
+        {
+          type: 'rental-request',
+          rentalId,
+          ownerId,
+          machineryName,
+          renterName,
+        },
+        'machinery-rental'
+      );
+
+      console.log(`Rental request notification sent to owner ${ownerId}`);
+    } catch (error) {
+      console.error('Error sending rental request notification:', error);
+    }
+  }
+
+  async sendRentalStatusNotification(
+    userId: string,
+    machineryName: string,
+    status: string,
+    rentalId: string
+  ): Promise<void> {
+    try {
+      let title = '';
+      let body = '';
+
+      switch (status) {
+        case 'confirmed':
+          title = 'Rental Confirmed';
+          body = `Your rental request for ${machineryName} has been confirmed!`;
+          break;
+        case 'cancelled':
+          title = 'Rental Cancelled';
+          body = `Your rental request for ${machineryName} has been cancelled.`;
+          break;
+        case 'completed':
+          title = 'Rental Completed';
+          body = `Your rental of ${machineryName} has been completed. Please rate your experience.`;
+          break;
+        default:
+          title = 'Rental Update';
+          body = `Your rental of ${machineryName} status has been updated to ${status}.`;
+      }
+
+      await this.sendImmediateNotification(
+        title,
+        body,
+        {
+          type: 'rental-status',
+          rentalId,
+          status,
+          machineryName,
+        },
+        'machinery-rental'
+      );
+
+      console.log(`Rental status notification sent to user ${userId}`);
+    } catch (error) {
+      console.error('Error sending rental status notification:', error);
+    }
+  }
+
+  async sendPaymentNotification(
+    userId: string,
+    machineryName: string,
+    amount: number,
+    paymentStatus: string,
+    rentalId: string
+  ): Promise<void> {
+    try {
+      let title = '';
+      let body = '';
+
+      switch (paymentStatus) {
+        case 'paid':
+          title = 'Payment Received';
+          body = `Payment of ৳${amount} for ${machineryName} rental has been received.`;
+          break;
+        case 'failed':
+          title = 'Payment Failed';
+          body = `Payment of ৳${amount} for ${machineryName} rental has failed. Please try again.`;
+          break;
+        case 'refunded':
+          title = 'Payment Refunded';
+          body = `Payment of ৳${amount} for ${machineryName} rental has been refunded.`;
+          break;
+        default:
+          title = 'Payment Update';
+          body = `Payment status for ${machineryName} rental has been updated.`;
+      }
+
+      await this.sendImmediateNotification(
+        title,
+        body,
+        {
+          type: 'payment-update',
+          rentalId,
+          paymentStatus,
+          amount,
+          machineryName,
+        },
+        'machinery-rental'
+      );
+
+      console.log(`Payment notification sent to user ${userId}`);
+    } catch (error) {
+      console.error('Error sending payment notification:', error);
+    }
+  }
+
+  async sendRentalReminderNotification(
+    userId: string,
+    machineryName: string,
+    reminderType: 'start' | 'end',
+    rentalId: string,
+    dateTime: string
+  ): Promise<void> {
+    try {
+      let title = '';
+      let body = '';
+
+      if (reminderType === 'start') {
+        title = 'Rental Starting Soon';
+        body = `Your rental of ${machineryName} starts at ${dateTime}. Please be ready for pickup/delivery.`;
+      } else {
+        title = 'Rental Ending Soon';
+        body = `Your rental of ${machineryName} ends at ${dateTime}. Please prepare for return.`;
+      }
+
+      await this.sendImmediateNotification(
+        title,
+        body,
+        {
+          type: 'rental-reminder',
+          rentalId,
+          reminderType,
+          machineryName,
+          dateTime,
+        },
+        'machinery-rental'
+      );
+
+      console.log(`Rental reminder notification sent to user ${userId}`);
+    } catch (error) {
+      console.error('Error sending rental reminder notification:', error);
     }
   }
 

@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, Modal } from "react-native";
 import { getEquipmentList } from "@/services/api";
+import { getAvailableMachinery } from "@/services/machineryService";
 import AppHeader from "@/components/common/AppHeader";
 import EquipmentListItem from "@/components/inputs/EquipmentListItem";
 import MachineryMap from "@/components/inputs/MachineryMap";
 import MachineryQuickInfoBanner from "@/components/inputs/MachineryQuickInfoBanner";
+import UserMachineryList from "@/components/inputs/UserMachineryList";
+import AddMachineryForm from "@/components/inputs/AddMachineryForm";
+import MachineryRentalForm from "@/components/inputs/MachineryRentalForm";
+import RentalHistory from "@/components/inputs/RentalHistory";
+import TabView from "@/components/common/TabView";
 import { COLORS } from "@/constants/colors";
 import { useLocation } from "@/context/LocationContext";
+import { useUser } from "@/context/UserContext";
+import { Machinery } from "@/types/machinery";
 import { MapPin, List, LocateFixed, AlertCircle } from "lucide-react-native";
 
 interface Equipment {
@@ -30,16 +38,26 @@ export default function MachineryScreen() {
     isLoading: locationLoading,
     error: locationError 
   } = useLocation();
+  const { user } = useUser();
   
+  const [activeTab, setActiveTab] = useState("Browse Machinery");
   const [viewMode, setViewMode] = useState("list"); // "list" or "map"
   const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [availableMachinery, setAvailableMachinery] = useState<Machinery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMachinery, setSelectedMachinery] = useState<Equipment | null>(null);
+  const [selectedMachineryForRent, setSelectedMachineryForRent] = useState<Machinery | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showRentalForm, setShowRentalForm] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
-    loadEquipment();
-  }, [location]);
+    if (activeTab === "Browse Machinery") {
+      loadEquipment();
+      loadAvailableMachinery();
+    }
+  }, [location, activeTab]);
 
   useEffect(() => {
     // Show location error if any
@@ -47,6 +65,19 @@ export default function MachineryScreen() {
       setError(locationError);
     }
   }, [locationError]);
+
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    return Math.round(distance * 10) / 10; // Round to 1 decimal place
+  };
 
   const loadEquipment = async () => {
     if (!location) return;
@@ -61,12 +92,22 @@ export default function MachineryScreen() {
       });
       
       if (response.success) {
-        // Add dummy latitude and longitude to equipment if not present
-        const equipmentWithCoords = response.data.map((item: Equipment, index: number) => ({
-          ...item,
-          latitude: item.latitude || (location.latitude + (index * 0.001 * (index % 2 === 0 ? 1 : -1))),
-          longitude: item.longitude || (location.longitude + (index * 0.001 * (index % 2 === 0 ? 1 : -1))),
-        }));
+        // Process equipment with proper coordinates and distance calculation
+        const equipmentWithCoords = response.data.map((item: Equipment, index: number) => {
+          // Use actual coordinates if available, otherwise generate realistic nearby coordinates
+          const equipmentLat = item.latitude || (location.latitude + (Math.random() - 0.5) * 0.1); // Within ~5km radius
+          const equipmentLon = item.longitude || (location.longitude + (Math.random() - 0.5) * 0.1);
+          
+          // Calculate actual distance
+          const distance = calculateDistance(location.latitude, location.longitude, equipmentLat, equipmentLon);
+          
+          return {
+            ...item,
+            latitude: equipmentLat,
+            longitude: equipmentLon,
+            distance: `${distance}`, // Update distance with calculated value
+          };
+        });
         setEquipment(equipmentWithCoords);
       } else {
         setError("Failed to load equipment information");
@@ -76,6 +117,37 @@ export default function MachineryScreen() {
       setError("An error occurred while loading equipment information");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableMachinery = async () => {
+    if (!location) return;
+    
+    try {
+      const machinery = await getAvailableMachinery(location.latitude, location.longitude);
+      
+      // Calculate distances for user-added machinery
+      const machineryWithDistance = machinery.map(item => {
+        const distance = calculateDistance(
+          location.latitude, 
+          location.longitude, 
+          item.location.latitude, 
+          item.location.longitude
+        );
+        return {
+          ...item,
+          location: {
+            ...item.location,
+            address: item.location.address === `${item.location.latitude.toFixed(4)}, ${item.location.longitude.toFixed(4)}` 
+              ? `${distance} km away` 
+              : `${item.location.address} (${distance} km away)`
+          }
+        };
+      });
+      
+      setAvailableMachinery(machineryWithDistance);
+    } catch (error) {
+      console.error("Error loading available machinery:", error);
     }
   };
 
@@ -111,8 +183,92 @@ export default function MachineryScreen() {
   };
 
   const handleReserve = (equipmentId: string) => {
-    console.log(`Reserving equipment ${equipmentId}`);
-    // In a real app, we would call an API to reserve the equipment
+    // Check if user is logged in
+    if (!user) {
+      Alert.alert(
+        'Login Required',
+        'Please log in to rent machinery',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Login', onPress: () => {
+            // Navigate to login - you might want to implement navigation here
+            console.log('Navigate to login');
+          }}
+        ]
+      );
+      return;
+    }
+
+    // Find machinery in available machinery list (new system)
+    const machinery = availableMachinery.find(m => m.id === equipmentId);
+    if (machinery) {
+      // Check if user is trying to rent their own machinery
+      if (machinery.ownerId === user.id) {
+        Alert.alert('Error', 'You cannot rent your own machinery');
+        return;
+      }
+      
+      setSelectedMachineryForRent(machinery);
+      setShowRentalForm(true);
+    } else {
+      // Fallback for old equipment system - convert to machinery format
+      const foundEquipment = equipment.find((e: Equipment) => e.id === equipmentId);
+      if (foundEquipment) {
+        // Create a temporary machinery object for old equipment
+        const tempMachinery: Machinery = {
+          id: foundEquipment.id,
+          name: foundEquipment.name,
+          type: 'other',
+          description: 'Legacy equipment from external API',
+          imageUrl: foundEquipment.imageUrl,
+          pricePerHour: 500, // Default price
+          pricePerDay: 3000, // Default price
+          available: foundEquipment.available,
+          ownerId: 'external',
+          ownerName: 'External Provider',
+          ownerContact: 'Contact through app',
+          location: {
+            latitude: foundEquipment.latitude || 0,
+            longitude: foundEquipment.longitude || 0,
+            address: foundEquipment.distance,
+          },
+          specifications: {
+            condition: 'good',
+          },
+          availability: {
+            startDate: new Date().toISOString().split('T')[0],
+            endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            unavailableDates: [],
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        
+        setSelectedMachineryForRent(tempMachinery);
+        setShowRentalForm(true);
+      } else {
+        Alert.alert('Error', 'Machinery not found. Please try again.');
+      }
+    }
+  };
+
+  const handleAddMachinery = () => {
+    if (!user) {
+      Alert.alert('Login Required', 'Please log in to add machinery');
+      return;
+    }
+    setShowAddForm(true);
+  };
+
+  const handleAddSuccess = () => {
+    setShowAddForm(false);
+    setRefreshTrigger(prev => prev + 1);
+    Alert.alert('Success', 'Machinery added successfully!');
+  };
+
+  const handleRentalSuccess = () => {
+    setShowRentalForm(false);
+    setSelectedMachineryForRent(null);
   };
 
   const handleMarkerPress = (machinery: Equipment) => {
@@ -133,6 +289,20 @@ export default function MachineryScreen() {
     />
   );
 
+  const renderMachineryItem = ({ item }: { item: Machinery }) => (
+    <EquipmentListItem
+      name={item.name}
+      status={item.available ? "Available" : "Not Available"}
+      statusColor={item.available ? COLORS.success : COLORS.error}
+      distance={`${item.location.address}`}
+      imageUrl={item.imageUrl}
+      price={`৳${item.pricePerHour}/hr - ৳${item.pricePerDay}/day`}
+      onPress={() => handleReserve(item.id)}
+      buttonText="Rent Now"
+      buttonDisabled={!item.available}
+    />
+  );
+
   const renderMapView = () => {
     // Convert userLocation to the expected format
     const convertedUserLocation = userLocation ? {
@@ -140,10 +310,33 @@ export default function MachineryScreen() {
       longitude: userLocation.coords.longitude
     } : null;
 
+    // Combine equipment and machinery for map display
+    const allEquipment = [
+      ...equipment,
+      ...availableMachinery.map(m => {
+        const distance = calculateDistance(
+          location?.latitude || 0, 
+          location?.longitude || 0, 
+          m.location.latitude, 
+          m.location.longitude
+        );
+        return {
+          id: m.id,
+          name: m.name,
+          available: m.available,
+          distance: `${distance}`,
+          imageUrl: m.imageUrl,
+          price: `৳${m.pricePerHour}/hr`,
+          latitude: m.location.latitude,
+          longitude: m.location.longitude,
+        };
+      })
+    ];
+
     return (
       <View style={styles.mapContainer}>
         <MachineryMap 
-          equipment={equipment}
+          equipment={allEquipment}
           onReserve={handleReserve}
           onMarkerPress={handleMarkerPress}
           userLocation={convertedUserLocation}
@@ -156,6 +349,68 @@ export default function MachineryScreen() {
       </View>
     );
   };
+
+  const renderBrowseContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      );
+    }
+
+    const hasEquipment = equipment.length > 0 || availableMachinery.length > 0;
+
+    if (!hasEquipment) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No equipment found in your area</Text>
+        </View>
+      );
+    }
+
+    if (viewMode === "map") {
+      return (
+        <>
+          {renderMapView()}
+          {selectedMachinery && (
+            <MachineryQuickInfoBanner 
+              machinery={selectedMachinery} 
+              onPress={handleReserve} 
+              onClose={() => setSelectedMachinery(null)}
+            />
+          )}
+        </>
+      );
+    }
+
+    return (
+      <FlatList
+        data={[...equipment, ...availableMachinery]}
+        renderItem={({ item }) => {
+          // Check if it's a Machinery object or Equipment object
+          if ('pricePerHour' in item) {
+            return renderMachineryItem({ item: item as Machinery });
+          } else {
+            return renderItem({ item: item as Equipment });
+          }
+        }}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  const tabs = ["Browse Machinery", "My Machinery", "Rental History"];
 
   return (
     <View style={styles.container}>
@@ -178,77 +433,97 @@ export default function MachineryScreen() {
           </TouchableOpacity>
         </View>
       )}
-      
-      <View style={styles.viewToggleContainer}>
-        <TouchableOpacity
-          style={[
-            styles.viewToggleButton,
-            viewMode === "list" && styles.activeViewToggleButton,
-          ]}
-          onPress={() => setViewMode("list")}
-        >
-          <List size={20} color={viewMode === "list" ? COLORS.white : COLORS.textPrimary} />
-          <Text
-            style={[
-              styles.viewToggleText,
-              viewMode === "list" && styles.activeViewToggleText,
-            ]}
-          >
-            List View
-          </Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[
-            styles.viewToggleButton,
-            viewMode === "map" && styles.activeViewToggleButton,
-          ]}
-          onPress={() => setViewMode("map")}
-        >
-          <MapPin size={20} color={viewMode === "map" ? COLORS.white : COLORS.textPrimary} />
-          <Text
-            style={[
-              styles.viewToggleText,
-              viewMode === "map" && styles.activeViewToggleText,
-            ]}
-          >
-            Map View
-          </Text>
-        </TouchableOpacity>
-      </View>
-      
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-      ) : error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      ) : equipment.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No equipment found in your area</Text>
-        </View>
-      ) : viewMode === "map" ? (
+
+      <TabView
+        tabs={tabs}
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
+      />
+
+      {activeTab === "Browse Machinery" && (
         <>
-          {renderMapView()}
-          {selectedMachinery && (
-            <MachineryQuickInfoBanner 
-              machinery={selectedMachinery} 
-              onPress={handleReserve} 
-              onClose={() => setSelectedMachinery(null)}
-            />
-          )}
+          <View style={styles.viewToggleContainer}>
+            <TouchableOpacity
+              style={[
+                styles.viewToggleButton,
+                viewMode === "list" && styles.activeViewToggleButton,
+              ]}
+              onPress={() => setViewMode("list")}
+            >
+              <List size={20} color={viewMode === "list" ? COLORS.white : COLORS.textPrimary} />
+              <Text
+                style={[
+                  styles.viewToggleText,
+                  viewMode === "list" && styles.activeViewToggleText,
+                ]}
+              >
+                List View
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.viewToggleButton,
+                viewMode === "map" && styles.activeViewToggleButton,
+              ]}
+              onPress={() => setViewMode("map")}
+            >
+              <MapPin size={20} color={viewMode === "map" ? COLORS.white : COLORS.textPrimary} />
+              <Text
+                style={[
+                  styles.viewToggleText,
+                  viewMode === "map" && styles.activeViewToggleText,
+                ]}
+              >
+                Map View
+              </Text>
+            </TouchableOpacity>
+          </View>
+          
+          {renderBrowseContent()}
         </>
-      ) : (
-        <FlatList
-          data={equipment}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
+      )}
+
+      {activeTab === "My Machinery" && (
+        <UserMachineryList 
+          onAddNew={handleAddMachinery}
+          refreshTrigger={refreshTrigger}
         />
       )}
+
+      {activeTab === "Rental History" && (
+        <RentalHistory type="renter" />
+      )}
+
+      {/* Add Machinery Modal */}
+      <Modal
+        visible={showAddForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        <AddMachineryForm
+          onSuccess={handleAddSuccess}
+          onCancel={() => setShowAddForm(false)}
+        />
+      </Modal>
+
+      {/* Rental Form Modal */}
+      <Modal
+        visible={showRentalForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+      >
+        {selectedMachineryForRent && (
+          <MachineryRentalForm
+            machinery={selectedMachineryForRent}
+            onSuccess={handleRentalSuccess}
+            onCancel={() => {
+              setShowRentalForm(false);
+              setSelectedMachineryForRent(null);
+            }}
+          />
+        )}
+      </Modal>
     </View>
   );
 }
